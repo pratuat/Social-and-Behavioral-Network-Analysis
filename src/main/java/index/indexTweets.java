@@ -22,8 +22,12 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.LongField;
 import org.apache.lucene.document.StringField;
+import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.Term;
+import org.apache.lucene.search.*;
+import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.SimpleFSDirectory;
 import static org.apache.lucene.util.Version.LUCENE_41;
 import twitter4j.HashtagEntity;
@@ -33,22 +37,14 @@ import utils.StatusWrapper;
 
 public class indexTweets extends buildIndex {
 
-    // Long: because it is a very long int
     private LongField date;
-    // Document Structure
     private Document tweet;
-    // Long: because it is a very long int
-    // Text: analyser applyed
     private TextField tweetText;
     private LongField userId;
     private LongField followers;
-    // String: beacuse it's important to save it without applying the analyzer
     private StringField name;
-    // String: beacuse it's important to save it without applying the analyzer
     private StringField screenName;
-    // Text: analyser applyed
     private TextField hashtags;
-    // Text: analyser applyed
     private TextField mentioned;
 
 
@@ -57,12 +53,6 @@ public class indexTweets extends buildIndex {
     // Wrapper that allow to use different analyzers
     private PerFieldAnalyzerWrapper wrapper;
 
-    /**
-     * Inizialize builder parameters
-     *
-     * @param sourcePath where the data to create the index are stored
-     * @param indexPath where the index will be stored
-     */
     public indexTweets(String sourcePath, String indexPath) {
         // Initialization
         this.tweet = new Document();
@@ -90,6 +80,7 @@ public class indexTweets extends buildIndex {
         // Initialize paths
         this.sourcePath = sourcePath;
         this.indexPath = indexPath;
+
     }
 
     @Override
@@ -163,7 +154,34 @@ public class indexTweets extends buildIndex {
     }
 
     @Override
-    public void build(String fieldName, ArrayList<String> fieldValues) throws IOException {}
+    public void build(String name, ArrayList<String> values) throws IOException {
+        params(indexPath);
+
+        // A list of all the tweets of interest of the source index
+        ArrayList<Document> interestedTweets;
+        for (String value : values) {
+            // retrieve all tweets (name) that match the value
+            interestedTweets = search(name, value, 10000);
+            System.out.println(value + " " + interestedTweets.size());
+            for (Document tweet : interestedTweets) {
+                this.userId.setLongValue(Long.parseLong(tweet.get("userId")));
+                this.date.setLongValue(Long.parseLong(tweet.get("date")));
+                this.name.setStringValue(tweet.get("name"));
+                this.screenName.setStringValue(tweet.get("screenName"));
+                this.tweetText.setStringValue(tweet.get("tweetText"));
+                this.followers.setLongValue(Long.parseLong(tweet.get("followers")));
+                this.mentioned.setStringValue(tweet.get("mentioned"));
+                this.hashtags.setStringValue(tweet.get("hashtags"));
+
+                //System.out.println(this.tweet);
+                this.writer.addDocument(this.tweet);
+            }
+
+            this.writer.commit();
+        }
+
+        this.writer.close();
+    }
 
     @Override
     public void params(String dirName) throws IOException {
@@ -177,9 +195,7 @@ public class indexTweets extends buildIndex {
 
     // Method used to remove irrelevant parts from tweet texts
     private String cleanText(String uncleanedText) {
-        // Remove String "RT" used to advise that the tweet is a retweet
         String cleanedText = uncleanedText.replace("RT ", " ");
-        // Remove all the urls
         cleanedText = cleanedText.replaceAll("htt\\S*", " ");
         cleanedText = cleanedText.replaceAll("htt\\S*$", " ");
         cleanedText = cleanedText.replaceAll("\\d+\\S*", " ");
@@ -188,4 +204,30 @@ public class indexTweets extends buildIndex {
 
         return cleanedText;
     }
+
+    public ArrayList<Document> search(String name, String value, int range) {
+        try {
+            String indexLocation = "./index/indexTweets";
+            Directory dir = new SimpleFSDirectory(new File(indexLocation));
+            DirectoryReader ir = DirectoryReader.open(dir);
+            IndexSearcher searcher = new IndexSearcher(ir);
+            Query q;
+            q = new TermQuery(new Term(name, value));
+            TopDocs td = searcher.search(q, range);
+            ScoreDoc[] queryResults = td.scoreDocs;
+            ArrayList<Document> results = new ArrayList<>();
+
+            for (ScoreDoc element : queryResults) {
+                Document d = searcher.doc(element.doc);
+                results.add(d);
+            }
+            return results;
+        } catch (IOException ex) {
+            System.out.println("---> Problems with source files: IOException <---");
+            ex.printStackTrace();
+
+            return null;
+        }
+    }
+
 }
