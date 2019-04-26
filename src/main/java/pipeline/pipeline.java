@@ -4,18 +4,21 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+
+import com.AppConfigs;
 import twitter4j.TwitterException;
 import index.indexTweets;
 
 public class pipeline {
 
         public static void createTweetIndex(String sourcePath) {
-
             System.out.println("Tweets Index Creation!");
-            String indexPath = "index/indexTweets";
+            String indexPath = AppConfigs.TWEET_INDEX_PATH;
+
             // Initialize a new TweetsIndexBuilder
             indexTweets indexAllTweets = new indexTweets(sourcePath, indexPath);
-            Path dir = Paths.get("index/indexTweets");
+            Path dir = Paths.get(indexPath);
+
             if (!Files.exists(dir)) {
                 try {
                     // Build the index
@@ -34,7 +37,7 @@ public class pipeline {
         }
 
         public static void main(String[] args){
-            String source = "./src/util/data/stream";
+            String source = AppConfigs.INPUT_DATA_PATH;
             createTweetIndex(source);
         }
 

@@ -8,6 +8,8 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
+
+import com.AppConfigs;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.util.CharArraySet;
 import org.apache.lucene.analysis.it.ItalianAnalyzer;
@@ -23,13 +25,12 @@ import twitter4j.TwitterException;
 
 public abstract class buildIndex {
     // from github guys
-    public static final String STREAM_FILES_LOCATION = "src/main/util/sbdata/stream/";
-    public static final File[] SUB_DIRECTORIES = new File(STREAM_FILES_LOCATION).listFiles((File file) -> file.isDirectory());
+//    public static final String STREAM_FILES_LOCATION = "./data/input/stream/";
+//    public static final File[] SUB_DIRECTORIES = new File(STREAM_FILES_LOCATION).listFiles((File file) -> file.isDirectory());
 
-    public static final String RESOURCES_DIRECTORY = "src/main/util/";
-    public static final String INDEX_DIRECTORY = "src/main/util/";
-    public static final String STOPWORDS_FILENAME = "stopwords.txt";
-
+//    public static final String RESOURCES_DIRECTORY = "./data/";
+//    public static final String INDEX_DIRECTORY = AppConfigs.INDEX_PATH;
+    public static final String STOPWORDS_FILENAME = "./data/input/stopwords-it.txt";
 
     public Directory dir;
     public Analyzer analyzer;
@@ -56,7 +57,7 @@ public abstract class buildIndex {
             InputStreamReader inputReader;
             BufferedReader br;
 
-            inputStream = new FileInputStream(RESOURCES_DIRECTORY + STOPWORDS_FILENAME);
+            inputStream = new FileInputStream(STOPWORDS_FILENAME);
             inputReader = new InputStreamReader(inputStream);
             br = new BufferedReader(inputReader);
 

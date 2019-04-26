@@ -108,6 +108,10 @@ public class indexTweets extends buildIndex {
         for (Path stream : allStreams) {
             System.out.println(stream);
 
+            if (stream.toFile().isFile()) {
+                continue;
+            }
+
             // get all files withing a stream folder
             DirectoryStream<Path> streamFiles = Files.newDirectoryStream(stream);
             int count = 1;
@@ -117,7 +121,12 @@ public class indexTweets extends buildIndex {
             // For each file within a stream
             for (Path file : streamFiles) {
 
+                if (file.endsWith(".DS_Store")) {
+                    continue;
+                }
+
                 System.out.println(streamNumber + ") " + count + " out of " + totalFiles);
+
                 count++;
                 FileInputStream fstream = new FileInputStream(file.toString());
                 GZIPInputStream gzstream = new GZIPInputStream(fstream);
@@ -143,7 +152,6 @@ public class indexTweets extends buildIndex {
                     }
                     this.mentioned.setStringValue(mentionedPeople);
 
-
                     String hashtags = "";
                     for (HashtagEntity hashtag : sw.getStatus().getHashtagEntities()) {
                         hashtags += "#" + hashtag.getText() + " ";
@@ -154,11 +162,8 @@ public class indexTweets extends buildIndex {
                 }
             }
             streamNumber++;
-
             this.writer.commit();
         }
-
-
         this.writer.close();
     }
 
