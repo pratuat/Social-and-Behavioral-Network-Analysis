@@ -29,7 +29,7 @@ public abstract class buildIndex {
 //    public static final File[] SUB_DIRECTORIES = new File(STREAM_FILES_LOCATION).listFiles((File file) -> file.isDirectory());
 
 //    public static final String RESOURCES_DIRECTORY = "./data/";
-//    public static final String INDEX_DIRECTORY = AppConfigs.INDEX_PATH;
+//    public static final String INDEX_DIRECTORY = AppConfigs.TWEET_INDEX_PATH;
     public static final String STOPWORDS_FILENAME = "./data/input/stopwords-it.txt";
 
     public Directory dir;
