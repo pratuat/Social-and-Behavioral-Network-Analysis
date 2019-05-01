@@ -19,6 +19,7 @@ import java.io.File;
 import java.io.FileReader;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.IntStream;
 
 
 public class UserTweetIndexer {
@@ -27,25 +28,43 @@ public class UserTweetIndexer {
     public static final CharArraySet STOPWORDS = CharArraySet.copy(Version.LUCENE_41, ItalianAnalyzer.getDefaultStopSet());
 
     public static void main(String[] args){
+        procesUserTweet();
+    }
+
+    private static void procesUserTweet(){
         try {
             List<String> politician_ids = list_politician_ids();
 
-            Query query = build_query(politician_ids);
+            Query query = build_user_tweet_query(politician_ids);
 
             IndexSearcher tweet_searcher = get_index_searcher(TWEET_INDEX_PATH);
 
-            TopDocs top_docs = tweet_searcher.search(query, Integer.MAX_VALUE);
+            TopDocs topDocs = tweet_searcher.search(query, Integer.MAX_VALUE);
 
             IndexWriter user_tweet_writer = get_index_writer(USER_TWEET_INDEX_PATH);
 
-            List<Document> documents = write_to_user_tweet_index(tweet_searcher, top_docs, user_tweet_writer);
+            List<Document> documents = write_to_user_tweet_index(tweet_searcher, topDocs, user_tweet_writer);
+            System.out.println("Total number of documents: " + documents.toArray().length);
 
             user_tweet_writer.commit();
             user_tweet_writer.close();
 
-//            IndexReader user_tweet_reader = get_index_reader(USER_TWEET_INDEX_PATH);
-//            System.out.println("Total Number of Tweets: " + user_tweet_reader.numDocs());
+            // IndexSearcher user_tweet_searcher = get_index_searcher(USER_TWEET_INDEX_PATH);
+            // TopDocs topDocs = user_tweet_searcher.search(new MatchAllDocsQuery(), Integer.MAX_VALUE);
 
+            List<String> userIds = new ArrayList<String>();
+            List<String> mentioned = new ArrayList<String>();
+
+
+            for (ScoreDoc scoreDoc : topDocs.scoreDocs){
+                Document doc = tweet_searcher.doc(scoreDoc.doc);
+
+                userIds.add(doc.get("userId"));
+                mentioned.add(doc.get("mentioned"));
+            }
+
+            System.out.println("Total no of tweets: " + userIds.toArray().length);
+            System.out.println("Total no of users: " + userIds.stream().distinct().toArray().length);
         } catch (Exception e){
             System.out.println(e.getStackTrace());
         }
@@ -91,7 +110,32 @@ public class UserTweetIndexer {
         return politician_ids;
     }
 
-    private static Query build_query(List<String> politician_ids){
+    private static Query build_user_tweet_query(List<String> politician_ids){
+        Query query = null;
+
+        try {
+            StandardAnalyzer analyzer = new StandardAnalyzer(Version.LUCENE_41);
+
+            List<String> query_tags = new ArrayList<String>();
+
+            for(String id : politician_ids){
+                query_tags.add("mentioned:\"" + id + "\"");
+            }
+
+            String query_string = String.join(" OR ", query_tags);
+            System.out.println(query_string);
+
+            query = new QueryParser(Version.LUCENE_41, "title", analyzer).parse(query_string);
+
+        } catch (Exception e){
+            System.out.print(e.getStackTrace());
+        }
+
+        return query;
+//        return new MatchAllDocsQuery();
+    }
+
+    private static Query build_distinct_user_query(List<String> politician_ids){
         Query query = null;
 
         try {
