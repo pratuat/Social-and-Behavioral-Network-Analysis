@@ -2,6 +2,13 @@ package user_tweet;
 
 import com.AppConfigs;
 import com.opencsv.CSVReader;
+import it.stilo.g.algo.ConnectedComponents;
+import it.stilo.g.algo.HubnessAuthority;
+import it.stilo.g.structures.DoubleValues;
+import it.stilo.g.structures.LongIntDict;
+import it.stilo.g.structures.WeightedDirectedGraph;
+import it.stilo.g.structures.WeightedUndirectedGraph;
+import it.stilo.g.util.GraphReader;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.it.ItalianAnalyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
@@ -14,101 +21,180 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.SimpleFSDirectory;
 import org.apache.lucene.util.Version;
-
-import java.io.File;
-import java.io.FileReader;
+import java.io.*;
+import it.stilo.g.algo.SubGraph;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
-import java.util.stream.IntStream;
+import java.util.Set;
 
 
 public class UserTweetIndexer {
-    public static final String TWEET_INDEX_PATH = AppConfigs.TWEET_INDEX_PATH;
-    public static final String USER_TWEET_INDEX_PATH = AppConfigs.USER_TWEET_INDEX_PATH;
-    public static final CharArraySet STOPWORDS = CharArraySet.copy(Version.LUCENE_41, ItalianAnalyzer.getDefaultStopSet());
+    public static final String TWEET_INDEX_PATH = AppConfigs.TWEET_INDEX;
+    public static final String USER_TWEET_INDEX_PATH = AppConfigs.USER_TWEET_INDEX;
+
+
+    public static int runner = (int) (Runtime.getRuntime().availableProcessors());
 
     public static void main(String[] args){
-        procesUserTweet();
+
+        // processUserTweet();
+
+        processUserGraph();
+
+        // generateUserPoliticianGraph();
     }
 
-    private static void procesUserTweet(){
+    private static void processUserGraph() {
+
         try {
-            List<String> politician_ids = list_politician_ids();
 
-            Query query = build_user_tweet_query(politician_ids);
 
-            IndexSearcher tweet_searcher = get_index_searcher(TWEET_INDEX_PATH);
 
-            TopDocs topDocs = tweet_searcher.search(query, Integer.MAX_VALUE);
+            int graphSize = 16815933;
+            WeightedDirectedGraph g= new WeightedDirectedGraph(graphSize + 1);
 
-            IndexWriter user_tweet_writer = get_index_writer(USER_TWEET_INDEX_PATH);
+            LongIntDict mapLong2Int = new LongIntDict();
+            GraphReader.readGraphLong2IntRemap(g, AppConfigs.USER_GRAPH_PATH, mapLong2Int, false);
 
-            List<Document> documents = write_to_user_tweet_index(tweet_searcher, topDocs, user_tweet_writer);
-            System.out.println("Total number of documents: " + documents.toArray().length);
 
-            user_tweet_writer.commit();
-            user_tweet_writer.close();
+            WeightedUndirectedGraph largestCC = getLargestCC(g);
+            // computeHITS(largestCC);
 
-            // IndexSearcher user_tweet_searcher = get_index_searcher(USER_TWEET_INDEX_PATH);
-            // TopDocs topDocs = user_tweet_searcher.search(new MatchAllDocsQuery(), Integer.MAX_VALUE);
+            ArrayList<ArrayList<DoubleValues>> list;
 
-            List<String> userIds = new ArrayList<String>();
-            List<String> mentioned = new ArrayList<String>();
+            list = HubnessAuthority.compute(g, 0.00001, runner);
+
+            for (int i = 0; i < list.size(); i++) {
+                ArrayList<DoubleValues> score = list.get(i);
+
+                String x = "";
+
+                if (i == 0) {
+                    x = "Auth";
+                } else {
+                    x = "Hub";
+                }
+
+                for (int j = 0; j < score.size(); j++) {
+                    System.out.println( x + score.get(j).value + ":\t\t" + score.get(j).index);
+                }
+            }
+        } catch (Exception e){
+            System.out.println("!!! Error Here @ UserTweetIndexer#processUserGraph !!!");
+            e.printStackTrace();
+        }
+    }
+
+    private static WeightedUndirectedGraph getLargestCC(WeightedUndirectedGraph g) throws InterruptedException {
+        // this get the largest component of the graph and returns a graph too
+        //System.out.println(Arrays.deepToString(g.weights));
+        int[] all = new int[g.size];
+        for (int i = 0; i < g.size; i++) {
+            all[i] = i;
+        }
+
+        System.out.println("CC");
+        Set<Set<Integer>> comps = ConnectedComponents.rootedConnectedComponents(g, all, runner);
+
+        Set<Integer> max_set = getMaxSet(comps);
+        int[] subnodes = new int[max_set.size()];
+        Iterator<Integer> iterator = max_set.iterator();
+        for (int j = 0; j < subnodes.length; j++) {
+            subnodes[j] = iterator.next();
+        }
+
+        WeightedUndirectedGraph s = SubGraph.extract(g, subnodes, runner);
+        return s;
+    }
+
+    private static String[] processUserTweet(){
+
+        String[] all_users = null;
+
+        try {
+            // List<String> politician_ids = list_politician_ids();
+
+            // Query query = build_user_tweet_query(politician_ids);
+            // IndexSearcher tweet_searcher = IndexUtility.get_index_searcher(TWEET_INDEX_PATH);
+            // TopDocs topDocs = tweet_searcher.search(query, Integer.MAX_VALUE);
+
+            // IndexWriter user_tweet_writer = IndexUtility.get_index_writer(USER_TWEET_INDEX_PATH);
+
+            // List<Document> documents = IndexUtility.write_to_user_tweet_index(tweet_searcher, topDocs, user_tweet_writer);
+
+            IndexSearcher tweet_searcher = IndexUtility.get_index_searcher(USER_TWEET_INDEX_PATH);
+            TopDocs topDocs = tweet_searcher.search(new MatchAllDocsQuery(), Integer.MAX_VALUE);
+
+
+            List<String> user_ids = new ArrayList<String>();
+            List<String> user_names = new ArrayList<String>();
+            // List<String> mentions = new ArrayList<String>();
 
 
             for (ScoreDoc scoreDoc : topDocs.scoreDocs){
                 Document doc = tweet_searcher.doc(scoreDoc.doc);
 
-                userIds.add(doc.get("userId"));
-                mentioned.add(doc.get("mentioned"));
+                user_ids.add(doc.get("userId"));
+                user_names.add(doc.get("name"));
+                // mentioned.add(doc.get("mentioned"));
+                // System.out.println(doc.get("userId") + doc.get("name") + " | " + doc.get("mentioned"));
             }
 
-            System.out.println("Total no of tweets: " + userIds.toArray().length);
-            System.out.println("Total no of users: " + userIds.stream().distinct().toArray().length);
+            all_users = user_ids.stream().distinct().toArray(String[]::new);
+
+            System.out.println("Total number of documents: " + topDocs.scoreDocs.length);
+            System.out.println("Total no of tweets: " + user_ids.toArray().length);
+            System.out.println("Total no of unique users: " + all_users.length);
+            // System.out.println("Total no of users: " + mentions.length);
+
+            FileWriter fr = new FileWriter(AppConfigs.OUTPUT_PATH + "all_user_ids.csv");
+            BufferedWriter br = new BufferedWriter(fr);
+            PrintWriter pw = new PrintWriter(br);
+
+            for (String user: all_users ){
+                pw.write(user);
+                pw.write("\n");
+            }
+
+            pw.close();
+
         } catch (Exception e){
             System.out.println(e.getStackTrace());
         }
+
+        return all_users;
     }
 
-    private static List<Document> write_to_user_tweet_index(IndexSearcher searcher, TopDocs top_docs, IndexWriter user_tweet_writer) throws Exception{
-        List<Document> documents = new ArrayList<>();
-
-        for (ScoreDoc scoreDoc : top_docs.scoreDocs) {
-            Document document = searcher.doc(scoreDoc.doc);
-            documents.add(document);
-
-//            System.out.println(String.format("%s, %s, %s, %s , %s | %s",
-//                    document.get("userId"),
-//                    document.get("date"),
-//                    document.get("name"),
-//                    document.get("screenName"),
-//                    document.get("mentioned"),
-//                    document.get("tweetText")
-//            ));
-        }
-
-        user_tweet_writer.addDocuments(documents);
-
-        return documents;
-    }
-
-    private static List<String> list_politician_ids(){
-        List<String> politician_ids = new ArrayList<String>();
-
+    private static void generateUserPoliticianGraph(){
         try {
-            try (CSVReader csvReader = new CSVReader(new FileReader(AppConfigs.POLITICIANS_LIST_FILE_PATH));) {
-                String[] values = null;
-                while ((values = csvReader.readNext()) != null) {
-                    politician_ids.add(values[0]);
+//            FileWriter fr = new FileWriter(file_name);
+//            BufferedWriter br = new BufferedWriter(fr);
+//            PrintWriter pw = new PrintWriter(br);
+
+            IndexSearcher tweet_searcher = IndexUtility.get_index_searcher(AppConfigs.USER_TWEET_INDEX);
+            TopDocs topDocs = tweet_searcher.search(new MatchAllDocsQuery(), Integer.MAX_VALUE);
+
+//            List<String> userIds = new ArrayList<String>();
+//            List<String> politicianIds = new ArrayList<String>();
+
+            for (ScoreDoc scoreDoc : topDocs.scoreDocs){
+                Document doc = tweet_searcher.doc(scoreDoc.doc);
+                String user_id = doc.get("userId");
+                String politician_ids = doc.get("mentioned");
+
+                for (String politician_id: politician_ids.split(" ")){
+                    System.out.println(user_id + "\t" + politician_id);
                 }
             }
-
-        } catch (Exception e) {
-            System.out.println(e.getStackTrace());
+        } catch (IOException e) {
+            e.printStackTrace();
+        } catch (Exception e){
+            e.printStackTrace();
         }
-
-        return politician_ids;
     }
+
+
 
     private static Query build_user_tweet_query(List<String> politician_ids){
         Query query = null;
@@ -135,6 +221,44 @@ public class UserTweetIndexer {
 //        return new MatchAllDocsQuery();
     }
 
+
+
+
+
+    private static Set<Integer> getMaxSet(Set<Set<Integer>> comps) {
+        int m = 0;
+        Set<Integer> max_set = null;
+
+        // get largest component
+        for (Set<Integer> innerSet : comps) {
+            if (innerSet.size() > m) {
+                max_set = innerSet;
+                m = innerSet.size();
+            }
+        }
+        return max_set;
+    }
+
+
+    private static void computeHITS(WeightedUndirectedGraph g) {
+        ArrayList<ArrayList<DoubleValues>> list = HubnessAuthority.compute(g, 0.00001, runner);
+
+        for (int i = 0; i < list.size(); i++) {
+            ArrayList<DoubleValues> score = list.get(i);
+            String x = "";
+            if (i == 0) {
+                x = "Auth ";
+            } else {
+                x = "Hub ";
+            }
+
+            for (int j = 0; j < score.size(); j++) {
+                System.out.println(x + score.get(j).value + ":\t\t" + score.get(j).index);
+            }
+        }
+    }
+
+
     private static Query build_distinct_user_query(List<String> politician_ids){
         Query query = null;
 
@@ -157,28 +281,9 @@ public class UserTweetIndexer {
         }
 
         return query;
-//        return new MatchAllDocsQuery();
+        // return new MatchAllDocsQuery();
     }
 
-    private static IndexSearcher get_index_searcher(String index_path) throws Exception {
-        File path = new File(index_path);
-        Directory directory = FSDirectory.open(path);
-        IndexReader indexReader = DirectoryReader.open(directory);
-        IndexSearcher searcher = new IndexSearcher(indexReader);
-
-        return searcher;
-    }
-
-    private static IndexWriter get_index_writer(String index_path) throws Exception{
-        Directory directory = new SimpleFSDirectory(new File(index_path));
-
-        Analyzer analyzer = new ItalianAnalyzer(Version.LUCENE_41, STOPWORDS);
-        IndexWriterConfig writerConfig = new IndexWriterConfig(Version.LUCENE_41, analyzer);
-
-        IndexWriter writer = new IndexWriter(directory, writerConfig);
-
-        return writer;
-    }
 
     private static IndexReader get_index_reader(String index_path) throws Exception{
         Directory directory = FSDirectory.open(new File(index_path));
