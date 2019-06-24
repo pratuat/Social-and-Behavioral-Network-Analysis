@@ -23,10 +23,8 @@ import org.apache.lucene.store.SimpleFSDirectory;
 import org.apache.lucene.util.Version;
 import java.io.*;
 import it.stilo.g.algo.SubGraph;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Set;
+
+import java.util.*;
 
 
 public class UserTweetIndexer {
@@ -49,37 +47,42 @@ public class UserTweetIndexer {
 
         try {
 
-
+//            List<Integer> users = FileUtility.list_all_user_ids();
+//            System.out.println("User lenght: " + String.valueOf(users.toArray().length));
 
             int graphSize = 16815933;
-            WeightedDirectedGraph g= new WeightedDirectedGraph(graphSize + 1);
+            WeightedUndirectedGraph g = new WeightedUndirectedGraph(graphSize + 1);
 
             LongIntDict mapLong2Int = new LongIntDict();
             GraphReader.readGraphLong2IntRemap(g, AppConfigs.USER_GRAPH_PATH, mapLong2Int, false);
 
+//            System.out.println("Original graph size: " + String.valueOf(g.size));
+//            System.out.print(g.V);
 
-            WeightedUndirectedGraph largestCC = getLargestCC(g);
+//            WeightedUndirectedGraph subgraph_lcc = getLargestCC(g);
+
+//            System.out.println("Largest CC graph size: " + String.valueOf(subgraph_lcc.size));
             // computeHITS(largestCC);
 
-            ArrayList<ArrayList<DoubleValues>> list;
-
-            list = HubnessAuthority.compute(g, 0.00001, runner);
-
-            for (int i = 0; i < list.size(); i++) {
-                ArrayList<DoubleValues> score = list.get(i);
-
-                String x = "";
-
-                if (i == 0) {
-                    x = "Auth";
-                } else {
-                    x = "Hub";
-                }
-
-                for (int j = 0; j < score.size(); j++) {
-                    System.out.println( x + score.get(j).value + ":\t\t" + score.get(j).index);
-                }
-            }
+//            ArrayList<ArrayList<DoubleValues>> list;
+//
+//            list = HubnessAuthority.compute(g, 0.00001, runner);
+//
+//            for (int i = 0; i < list.size(); i++) {
+//                ArrayList<DoubleValues> score = list.get(i);
+//
+//                String x = "";
+//
+//                if (i == 0) {
+//                    x = "Auth";
+//                } else {
+//                    x = "Hub";
+//                }
+//
+//                for (int j = 0; j < score.size(); j++) {
+//                    System.out.println( x + score.get(j).value + ":\t\t" + score.get(j).index);
+//                }
+//            }
         } catch (Exception e){
             System.out.println("!!! Error Here @ UserTweetIndexer#processUserGraph !!!");
             e.printStackTrace();
@@ -88,7 +91,9 @@ public class UserTweetIndexer {
 
     private static WeightedUndirectedGraph getLargestCC(WeightedUndirectedGraph g) throws InterruptedException {
         // this get the largest component of the graph and returns a graph too
-        //System.out.println(Arrays.deepToString(g.weights));
+
+        System.out.println(Arrays.deepToString(g.weights));
+
         int[] all = new int[g.size];
         for (int i = 0; i < g.size; i++) {
             all[i] = i;
@@ -167,6 +172,7 @@ public class UserTweetIndexer {
     }
 
     private static void generateUserPoliticianGraph(){
+
         try {
 //            FileWriter fr = new FileWriter(file_name);
 //            BufferedWriter br = new BufferedWriter(fr);
@@ -194,8 +200,6 @@ public class UserTweetIndexer {
         }
     }
 
-
-
     private static Query build_user_tweet_query(List<String> politician_ids){
         Query query = null;
 
@@ -220,10 +224,6 @@ public class UserTweetIndexer {
         return query;
 //        return new MatchAllDocsQuery();
     }
-
-
-
-
 
     private static Set<Integer> getMaxSet(Set<Set<Integer>> comps) {
         int m = 0;

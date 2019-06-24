@@ -13,7 +13,7 @@ public class pipeline {
 
         public static void createTweetIndex(String sourcePath) {
             System.out.println("Tweets Index Creation!");
-            String indexPath = AppConfigs.TWEET_INDEX_PATH;
+            String indexPath = AppConfigs.TWEET_INDEX;
 
             // Initialize a new TweetsIndexBuilder
             indexTweets indexAllTweets = new indexTweets(sourcePath, indexPath);
