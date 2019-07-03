@@ -18,4 +18,12 @@ public class AppConfigs {
 
     public static final String USER_GRAPH_PATH = "./data/input/short_Official_SBN-ITA-2016-Net.gz";
     // public static final String USER_GRAPH_PATH = "./data/input/Official_SBN-ITA-2016-Net.gz";
+
+    public static final String STOPWORDS = "./data/input/stopwords.txt";
+
+
+    public static final String PROJECT_DIR = "/Users/pratuat/course_materials/sbn/sbn_project/";
+    public static final String DATA_DIR = PROJECT_DIR + "data/";
+    public static final String RESOURCES_DIR = DATA_DIR + "resources/";
+    public static final String ALL_TWEET_INDEX = DATA_DIR + "indexes/all_tweet/";
 }
