@@ -24,7 +24,7 @@ public class IndexUtility {
 
     public static final CharArraySet STOPWORDS = CharArraySet.copy(Version.LUCENE_41, ItalianAnalyzer.getDefaultStopSet());
 
-    public static IndexSearcher get_index_searcher(String index_path) throws Exception {
+    public static IndexSearcher getIndexSearcher(String index_path) throws Exception {
 
         File path = new File(index_path);
         Directory directory = FSDirectory.open(path);
@@ -34,16 +34,21 @@ public class IndexUtility {
         return searcher;
     }
 
-    public static IndexWriter get_index_writer(String index_path) throws Exception{
+    public static IndexWriter getIndexWriter(String index_path, Analyzer analyzer) throws Exception{
 
         Directory directory = new SimpleFSDirectory(new File(index_path));
 
-        Analyzer analyzer = new ItalianAnalyzer(Version.LUCENE_41, STOPWORDS);
         IndexWriterConfig writerConfig = new IndexWriterConfig(Version.LUCENE_41, analyzer);
 
-        IndexWriter writer = new IndexWriter(directory, writerConfig);
+        IndexWriter writer = new IndexWriter(directory,  writerConfig);
 
         return writer;
+    }
+
+    public static IndexReader getIndexReader(String index_path) throws Exception{
+        Directory directory = FSDirectory.open(new File(index_path));
+        IndexReader indexReader = DirectoryReader.open(directory);
+        return indexReader;
     }
 
 
