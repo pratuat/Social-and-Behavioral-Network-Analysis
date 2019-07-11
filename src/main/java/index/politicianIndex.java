@@ -37,7 +37,7 @@ public class politicianIndex extends buildIndex {
     private String indexLocation = "./index/indexPoliticians";
     private IndexReader ir;
 
-    public politicianIndex(String sourcePath, String indexPath) {
+    public politicianIndex(String stream, String index) {
         // Initialize the document
         this.politician = new Document();
 
@@ -51,45 +51,46 @@ public class politicianIndex extends buildIndex {
         politician.add(party);
         politician.add(screenName);
         // Paths
-        this.sourcePath = sourcePath;
-        this.indexPath = indexPath;
+        this.stream = stream;
+        this.index = index;
     }
 
     @Override
-    public void build() throws IOException, TwitterException {
+    public void build() throws IOException {
         // Read the utils.csv file
         csv csv = new csv();
         twitter tw = new twitter();
         // Will contains the utils.csv file rows
-        ArrayList<String[]> rows;
+        ArrayList<String[]> lines;
         // Set builder params
-        params(indexPath);
-        rows = csv.read_csv(sourcePath,",");
+        params(index);
+        lines = csv.read_csv(stream,",");
         String id;
-        String[] result;
-        int followers;
-        for (String[] row : rows) {
-            String politicianName = row[0];
-            String party = row[1];
-            String vote = row[2];
-            result = tw.searchTwitterId(politicianName.toLowerCase());
-            id = result[0];
-            followers = Integer.parseInt(result[1]);
-            System.out.println("Search for : " + politicianName + ", followers: " + followers);
-            if (!id.equals("") && followers >= 800) {
+        String[] politicianInformation;
+        int politicianfollowers;
+        for (String[] line : lines) {
+            // extracting the politian information from
+            String politicianName = line[0];
+            String party = line[1];
+            String vote = line[2];
+            // searching on twitter for politician id
+            politicianInformation= tw.searchTwitterId(politicianName.toLowerCase());
+            id = politicianInformation[0];
+            politicianfollowers = Integer.parseInt(politicianInformation[1]);
+            System.out.println("Looking for ID of : " + politicianName + ", followers: " + politicianfollowers);
+            //adding politician to index if twiiter Id exist and number of followers above 1000
+            if (!id.equals("") && politicianfollowers >= 1000) {
                 this.name.setStringValue(politicianName);
                 this.screenName.setStringValue(id);
                 this.vote.setStringValue(vote);
-                System.out.println("Adding the following to index");
+                System.out.println("Adding the following politician to index");
                 System.out.println(this.politician.get("name"));
                 System.out.println(this.politician.get("screenName"));
                 System.out.println(this.politician.get("vote"));
                 this.writer.addDocument(this.politician);
-
             }
             System.out.println("----------------");
         }
-
         this.writer.commit();
         this.writer.close();
     }
@@ -101,24 +102,26 @@ public class politicianIndex extends buildIndex {
 
     public ArrayList<Document> search(String name, String value, int range) {
         try {
+            // keep the results of the query
+            ArrayList<Document> results = new ArrayList<>();
+            // setup an index reader
             Directory dir = new SimpleFSDirectory(new File(indexLocation));
             ir = DirectoryReader.open(dir);
+            // setup an index searcher
             IndexSearcher searcher = new IndexSearcher(ir);
+            // set up the query
             Query q;
             q = new TermQuery(new Term(name, value));
             TopDocs td = searcher.search(q, range);
+            //retrieve the results
             ScoreDoc[] queryResults = td.scoreDocs;
-            ArrayList<Document> results = new ArrayList<>();
-
             for (ScoreDoc element : queryResults) {
                 Document d = searcher.doc(element.doc);
                 results.add(d);
             }
             return results;
-        } catch (IOException ex) {
-            System.out.println("---> Problems with source files: IOException <---");
-            ex.printStackTrace();
-
+        } catch (IOException e) {
+            e.printStackTrace();
             return null;
         }
     }

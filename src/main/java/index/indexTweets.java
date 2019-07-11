@@ -22,21 +22,19 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.LongField;
 import org.apache.lucene.document.StringField;
-import org.apache.lucene.index.DirectoryReader;
-import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.IndexWriterConfig;
-import org.apache.lucene.index.Term;
+import org.apache.lucene.index.*;
 import org.apache.lucene.search.*;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.SimpleFSDirectory;
 import static org.apache.lucene.util.Version.LUCENE_41;
+import org.apache.lucene.util.BytesRef;
 import twitter4j.HashtagEntity;
 import twitter4j.TwitterException;
 import twitter4j.UserMentionEntity;
 import utils.StatusWrapper;
 
 public class indexTweets extends buildIndex {
-
+    // Setting up the main variable within the tweets
     private LongField date;
     private Document tweet;
     private TextField tweetText;
@@ -46,48 +44,52 @@ public class indexTweets extends buildIndex {
     private StringField screenName;
     private TextField hashtags;
     private TextField mentioned;
+    private PerFieldAnalyzerWrapper pfaWrapper;
+    private Map<String, Analyzer> analyzers;
 
-
-    // Map that define which field is going to have which analyzer
-    private Map<String, Analyzer> analyzerPerField;
-    // Wrapper that allow to use different analyzers
-    private PerFieldAnalyzerWrapper wrapper;
-
-    public indexTweets(String sourcePath, String indexPath) {
-        // Initialization
+    // Constructor initialize every variable within class
+    public indexTweets(String stream, String index) {
+        // Various paths
+        this.stream = stream;
+        this.index = index;
+        // Initialize the tweet
         this.tweet = new Document();
-
-        // Initialization of field
-        this.userId = new LongField("userId", 0L, Field.Store.YES);
+        // Initialize the field within the tweet
         this.date = new LongField("date", 0L, Field.Store.YES);
+        this.userId = new LongField("userId", 0L, Field.Store.YES);
+        this.tweetText = new TextField("tweetText", "", Field.Store.YES);
+        this.followers = new LongField("followers", 0L, Field.Store.YES);
         this.name = new StringField("name", "", Field.Store.YES);
         this.screenName = new StringField("screenName", "", Field.Store.YES);
-        this.tweetText = new TextField("tweetText", "", Field.Store.YES);
         this.hashtags = new TextField("hashtags", "", Field.Store.YES);
         this.mentioned = new TextField("mentioned", "", Field.Store.YES);
-        this.followers = new LongField("followers", 0L, Field.Store.YES);
-
-        // Adding the various fields to tweet
-        this.tweet.add(this.userId);
+        // assign the tweet fields within the document
         this.tweet.add(this.date);
+        this.tweet.add(this.userId);
+        this.tweet.add(this.tweetText);
+        this.tweet.add(this.followers);
         this.tweet.add(this.name);
         this.tweet.add(this.screenName);
-        this.tweet.add(this.tweetText);
         this.tweet.add(this.hashtags);
         this.tweet.add(this.mentioned);
-        this.tweet.add(this.followers);
+    }
 
-        // Initialize paths
-        this.sourcePath = sourcePath;
-        this.indexPath = indexPath;
-
+    @Override
+    public void params(String dirName) throws IOException {
+        this.dir = new SimpleFSDirectory(new File(dirName));
+        analyzers= new HashMap<String, Analyzer>();
+        analyzers.put("tweetText", new ItalianAnalyzer(LUCENE_41));
+        //analyzers.put("hashtags", new ItalianAnalyzer(LUCENE_41));
+        pfaWrapper = new PerFieldAnalyzerWrapper(new WhitespaceAnalyzer(LUCENE_41), analyzers);
+        this.cfg = new IndexWriterConfig(LUCENE_41, pfaWrapper);
+        this.writer = new IndexWriter(dir, cfg);
     }
 
     @Override
     public void build() throws IOException, TwitterException {
         // Initialization (replace source path with default path)
-        Path sourceDirPath = Paths.get(sourcePath);
-        params(indexPath);
+        Path sourceDirPath = Paths.get(stream);
+        params(index);
 
         // Get all the streams from the data provides
         DirectoryStream<Path> allStreams = Files.newDirectoryStream(sourceDirPath);
@@ -100,111 +102,84 @@ public class indexTweets extends buildIndex {
             System.out.println(stream);
 
             // get all files withing a stream folder
-            DirectoryStream<Path> streamFiles = Files.newDirectoryStream(stream);
+            DirectoryStream<Path> dirStream = Files.newDirectoryStream(stream);
             int count = 1;
-
             int totalFiles = new File(stream.toString()).listFiles().length;
-
             // For each file within a stream
-            for (Path file : streamFiles) {
+            for (Path f : dirStream) {
 
                 System.out.println(streamNumber + ") " + count + " out of " + totalFiles);
                 count++;
-                FileInputStream fstream = new FileInputStream(file.toString());
-                GZIPInputStream gzstream = new GZIPInputStream(fstream);
-                InputStreamReader isr = new InputStreamReader(gzstream, "UTF-8");
-                BufferedReader br = new BufferedReader(isr);
+                FileInputStream inputStream = new FileInputStream(f.toString());
+                GZIPInputStream gzstream = new GZIPInputStream(inputStream);
+                InputStreamReader inputReader = new InputStreamReader(gzstream, "UTF-8");
+                BufferedReader br = new BufferedReader(inputReader);
                 String line;
                 // unzip the file and read the data
                 while ((line = br.readLine()) != null) {
                     // reading the data was done using functionalities of StatusWrapper
                     sw = new StatusWrapper();
                     sw.load(line);
-                    this.userId.setLongValue(sw.getStatus().getUser().getId());
-                    this.date.setLongValue(sw.getTime());
-                    this.name.setStringValue(sw.getStatus().getUser().getName().toLowerCase());
-                    this.screenName.setStringValue(sw.getStatus().getUser().getScreenName());
-                    String cleanedText = cleanText(sw.getStatus().getText());
-                    this.tweetText.setStringValue(cleanedText);
-                    this.followers.setLongValue((long) sw.getStatus().getUser().getFollowersCount());
-
-                    String mentionedPeople = "";
+                    // get the various values for the tweets per field
+                    String mentioned = "";
                     for (UserMentionEntity user : sw.getStatus().getUserMentionEntities()) {
-                        mentionedPeople += user.getText() + " ";
+                        mentioned += user.getText() + " ";
                     }
-                    this.mentioned.setStringValue(mentionedPeople);
-
-
                     String hashtags = "";
                     for (HashtagEntity hashtag : sw.getStatus().getHashtagEntities()) {
                         hashtags += "#" + hashtag.getText() + " ";
                     }
+                    this.date.setLongValue(sw.getTime());
+                    this.userId.setLongValue(sw.getStatus().getUser().getId());
+                    this.tweetText.setStringValue(formatText(sw.getStatus().getText()));
+                    this.followers.setLongValue((long) sw.getStatus().getUser().getFollowersCount());
+                    this.name.setStringValue(sw.getStatus().getUser().getName().toLowerCase());
+                    this.screenName.setStringValue(sw.getStatus().getUser().getScreenName());
+                    this.mentioned.setStringValue(mentioned);
                     this.hashtags.setStringValue(hashtags.toLowerCase());
-                    // Add the document
                     this.writer.addDocument(this.tweet);
                 }
             }
             streamNumber++;
-
             this.writer.commit();
         }
-
-
         this.writer.close();
     }
 
     @Override
     public void build(String name, ArrayList<String> values) throws IOException {
-        params(indexPath);
-
+        params(index);
         // A list of all the tweets of interest of the source index
-        ArrayList<Document> interestedTweets;
+        ArrayList<Document> searchedTweets;
         for (String value : values) {
             // retrieve all tweets (name) that match the value
-            interestedTweets = search(name, value, 10000);
-            System.out.println(value + " " + interestedTweets.size());
-            for (Document tweet : interestedTweets) {
-                this.userId.setLongValue(Long.parseLong(tweet.get("userId")));
+            searchedTweets = search(name, value, 10000);
+            System.out.println(value + " " + searchedTweets.size());
+            for (Document tweet : searchedTweets) {
                 this.date.setLongValue(Long.parseLong(tweet.get("date")));
-                this.name.setStringValue(tweet.get("name"));
-                this.screenName.setStringValue(tweet.get("screenName"));
+                this.userId.setLongValue(Long.parseLong(tweet.get("userId")));
                 this.tweetText.setStringValue(tweet.get("tweetText"));
                 this.followers.setLongValue(Long.parseLong(tweet.get("followers")));
+                this.name.setStringValue(tweet.get("name"));
+                this.screenName.setStringValue(tweet.get("screenName"));
                 this.mentioned.setStringValue(tweet.get("mentioned"));
                 this.hashtags.setStringValue(tweet.get("hashtags"));
-
                 //System.out.println(this.tweet);
                 this.writer.addDocument(this.tweet);
             }
-
             this.writer.commit();
         }
 
         this.writer.close();
     }
 
-    @Override
-    public void params(String dirName) throws IOException {
-        this.dir = new SimpleFSDirectory(new File(dirName));
-        analyzerPerField = new HashMap<String, Analyzer>();
-        analyzerPerField.put("tweetText", new ItalianAnalyzer(LUCENE_41));
-        wrapper = new PerFieldAnalyzerWrapper(new WhitespaceAnalyzer(LUCENE_41), analyzerPerField);
-        this.cfg = new IndexWriterConfig(LUCENE_41, wrapper);
-        this.writer = new IndexWriter(dir, cfg);
-    }
-
-    // Method used to remove irrelevant parts from tweet texts
-    private String cleanText(String uncleanedText) {
-        String cleanedText = uncleanedText.replace("RT ", " ");
-        cleanedText = cleanedText.replaceAll("htt\\S*", " ");
-        cleanedText = cleanedText.replaceAll("htt\\S*$", " ");
-        cleanedText = cleanedText.replaceAll("\\d+\\S*", " ");
-        cleanedText = cleanedText.replaceAll("#\\S*", " ");
-        cleanedText = cleanedText.replaceAll("@\\S*", " ");
-
-        return cleanedText;
-    }
-
+    /**
+     * A list of detailed tweet corresponding to the searched items
+     * @param name field to be searched in
+     * @param value term to be seached
+     * @param range number of returned resul
+     * @return a list of  tweets matching our search parameters
+     */
     public ArrayList<Document> search(String name, String value, int range) {
         try {
             String indexLocation = "./index/indexTweets";
@@ -228,6 +203,114 @@ public class indexTweets extends buildIndex {
 
             return null;
         }
+    }
+
+    /**
+     * A method that search the occurence of two terms in the same tweet
+     * @param term1 Term to count and compare
+     * @param term2 Term to count and compare
+     * @param field Target field to look in
+     * @return An integer corresponding to the count of tweets containing both words
+     * @throws IOException
+     * @throws org.apache.lucene.queryparser.classic.ParseException
+     */
+    public int search(String term1, String term2, String field) throws IOException, org.apache.lucene.queryparser.classic.ParseException {
+        params(index);
+        writer.close();
+        String indexLocation = "./index/indexTweets";
+        Directory dir = new SimpleFSDirectory(new File(indexLocation));
+        DirectoryReader ir = DirectoryReader.open(dir);
+        IndexSearcher searcher = new IndexSearcher(ir);
+        //QueryParser parser = new QueryParser(Version.LUCENE_41, field, analyzer);
+        Query t1;
+        Query t2;
+//        if (stemming) {
+//          //  t1 = parser.parse(term1);
+//            //t2 = parser.parse(term2);
+//        } else {
+            t1 = new TermQuery(new Term(field, term1));
+            t2 = new TermQuery(new Term(field, term2));
+        //}
+
+
+        BooleanQuery query = new BooleanQuery();
+        query.add(t1, BooleanClause.Occur.MUST);
+        query.add(t2, BooleanClause.Occur.MUST);
+
+        TotalHitCountCollector collector = new TotalHitCountCollector();
+        //System.out.println(searcher.search(query));
+        searcher.search(query, collector);
+
+        return (collector.getTotalHits());
+    }
+
+    /**
+     * Method to check the occurence of a particular word within the index
+     * @param term the word to be searched
+     * @param field the particular field of interest within the index
+     * @return an integer corresponding to the count of tweets containing the term
+     * @throws IOException
+     * @throws org.apache.lucene.queryparser.classic.ParseException
+     */
+    public int termFrequency(String term, String field) throws IOException, org.apache.lucene.queryparser.classic.ParseException {
+        params(index);
+        writer.close();
+        String indexLocation = "./index/indexTweets";
+        Directory dir = new SimpleFSDirectory(new File(indexLocation));
+        DirectoryReader ir = DirectoryReader.open(dir);
+        IndexSearcher searcher = new IndexSearcher(ir);
+        //QueryParser parser = new QueryParser(Version.LUCENE_41, field, analyzer);
+        Query t = new TermQuery(new Term(field, term));
+
+        BooleanQuery query = new BooleanQuery();
+        query.add(t, BooleanClause.Occur.MUST);
+        TotalHitCountCollector collector = new TotalHitCountCollector();
+        searcher.search(t, collector);
+
+        return (collector.getTotalHits());
+    }
+
+    /**
+     * Removes not needed text within a string
+     * @param text
+     * @return the text without not relevant text (links, rt, hashtags etx)
+     */
+    // Format the text to remove unneeded strings
+    private String formatText(String text) {
+        String formatedText = text.replace("RT ", " ");
+        formatedText = formatedText.replaceAll("#\\S*", " ");
+        formatedText = formatedText.replaceAll("@\\S*", " ");
+        formatedText = formatedText.replaceAll("htt\\S*", " ");
+        formatedText = formatedText.replaceAll("htt\\S*$", " ");
+        formatedText = formatedText.replaceAll("\\d+\\S*", " ");
+
+        return formatedText;
+    }
+
+    public static void main(String[] args) throws Exception,UnsupportedOperationException, IOException{
+
+//        String indexLocation = "./index/indexTweets";
+//        Directory dir = new SimpleFSDirectory(new File(indexLocation));
+//        DirectoryReader ir = DirectoryReader.open(dir);
+//        //IndexSearcher searcher = new IndexSearcher(ir);
+//        Fields fields = MultiFields.getFields(ir);
+//        Terms terms = fields.terms("screenName");
+//        TermsEnum iterator = terms.iterator(null);
+//        BytesRef byteRef;
+//        System.out.println(terms);
+//
+//        int count = 0;
+//        while ((byteRef = iterator.next()) != null) {
+//            //System.out.println(new String(byteRef.bytes, byteRef.offset, byteRef.length));
+//            count++;
+//        }
+//       System.out.println(count);
+        String sourceTweets = "./src/util/data/stream";
+        String sourcePoliticians = "./src/util/list_politician.csv";
+        String indexTweets = "./index/indexTweets";
+        indexTweets in = new indexTweets(sourceTweets, indexTweets);
+        //System.out.println(in.search("userID", "2402701895",1000));
+        System.out.println(in.termFrequency("fondi", "tweetText"));
     }
 
 }
