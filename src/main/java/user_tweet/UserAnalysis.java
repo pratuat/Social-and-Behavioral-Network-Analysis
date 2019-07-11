@@ -2,13 +2,8 @@ package user_tweet;
 
 import analysis.GraphAnalysis;
 import com.AppConfigs;
-import gnu.trove.map.TIntLongMap;
-import it.stilo.g.algo.HubnessAuthority;
-import it.stilo.g.algo.KppNeg;
-import it.stilo.g.structures.DoubleValues;
 import it.stilo.g.structures.LongIntDict;
 import it.stilo.g.structures.WeightedDirectedGraph;
-import it.stilo.g.structures.WeightedGraph;
 import it.stilo.g.util.GraphReader;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
@@ -17,22 +12,16 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.queryparser.classic.ParseException;
-
 import java.io.*;
 import java.util.ArrayList;
-
 import org.apache.lucene.queryparser.classic.QueryParser;
 import org.apache.lucene.search.*;
 import org.apache.lucene.util.Version;
 import structure.MappedWeightedGraph;
 import twitter4j.JSONException;
-
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.stream.Collectors;
-
-import static io.TxtUtils.txtToList;
 import static user_tweet.IndexUtility.*;
 
 public class UserAnalysis {
@@ -40,20 +29,7 @@ public class UserAnalysis {
     public static IndexSearcher allTweetIndexSearcher;
     public static IndexSearcher userTweetIndexSearcher;
     public static IndexSearcher userPoliticianIndexSearcher;
-    public static IndexSearcher yesUserTweetIndexSearcher;
-    public static IndexSearcher noUserTweetIndexSearcher;
-
     public static HashMap<Long, String> userIntIdScreenNameHashMap= new HashMap<>();
-
-//    static {
-//        try {
-//            allTweetIndexSearcher = IndexUtility.getIndexSearcher(AppConfigs.ALL_TWEET_INDEX);
-//            userTweetIndexSearcher = IndexUtility.getIndexSearcher(AppConfigs.USER_TWEET_INDEX);
-//            userPoliticianIndexSearcher = IndexUtility.getIndexSearcher(AppConfigs.USER_POLITICIAN_INDEX);
-//        } catch (Exception e) {
-//            e.printStackTrace();
-//        }
-//    }
 
     public static void main(String[] args)  throws IOException, JSONException, ParseException, Exception {
 
@@ -66,8 +42,13 @@ public class UserAnalysis {
 
     }
 
-
-
+    /**
+     * Generates Largest Connected Component of user sub-graphs, compute HITS score and KPP-NEG score on user sub-graphs
+     * and save them to file
+     * @param topUsers List of user sets to perform graph analysis.
+     * @throws IOException
+     * @throws InterruptedException
+     */
     public static void generateUserInducedSubGraphs(List[] topUsers) throws IOException, InterruptedException {
         System.out.println("=====================================");
         System.out.println("Generating user induced subgraph ...");
@@ -77,7 +58,9 @@ public class UserAnalysis {
         List<String> topNoUsersByTweetCount = topUsers[2];
 
         // ... LOAD USER_ID-SCREEN_NAME HASH-MAP ... //
-
+        /**
+         * load user_id - user_screen_name hash-map
+         */
         String[] screenNames = FileUtility.loadColumnsFromCSV(AppConfigs.USER_TWEET_COUNT, 1);
         String[] longIds = FileUtility.loadColumnsFromCSV(AppConfigs.USER_TWEET_COUNT, 0);
 
@@ -85,8 +68,9 @@ public class UserAnalysis {
             userIntIdScreenNameHashMap.put(Long.parseLong(longIds[i]), screenNames[i]);
         }
 
-        // ... LOAD ORIGINAL GRAPH ... //
-
+        /**
+         * load original user graph
+         */
         System.out.println("Loading graph ...");
 
         int graphSize = 16815933;
@@ -96,13 +80,20 @@ public class UserAnalysis {
 
         System.out.println("Loading graph completed ...");
 
-        // ... EXTRACT LARGEST CONNECTED COMPONENT AND RETRIEVE TOP AUTHORITY [ ALL USERS ]... //
-
         System.out.println("-------------------------------------");
         System.out.println("Computing all user authorities ...");
 
+        // load users M, M_Y, M_N
         int[] topUsersIds = UserAnalysisUtility.getIntMappedUserIds(topUsersByTweetCount.stream().toArray(String[]::new), mapLong2Int);
-        MappedWeightedGraph lccGraph = GraphAnalysis.extractLargestCCofM(graph, topUsersIds, mapLong2Int, true);
+
+        /**
+         * Retrieve largest connected component S(M) of sub-graph induced by user M
+         */
+        MappedWeightedGraph lccGraph = GraphAnalysis.extractLargestCC(graph, topUsersIds, mapLong2Int, true);
+
+        /**
+         * Compute top 2000 hub and authority users from S(M) sub-graph
+         */
         GraphAnalysis.saveTopKAuthorities(lccGraph, mapLong2Int, 2000, AppConfigs.ALL_USERS_TOP_AUTHORITIES, userIntIdScreenNameHashMap);
 
         System.out.println("Computing all user authorities completed ...");
@@ -113,7 +104,14 @@ public class UserAnalysis {
         System.out.println("Computing yes user authorities ...");
 
         int[] topYesUsersIds = UserAnalysisUtility.getIntMappedUserIds(topYesUsersByTweetCount.stream().toArray(String[]::new), mapLong2Int);
-        MappedWeightedGraph yesLccGraph = GraphAnalysis.extractLargestCCofM(graph, topYesUsersIds, mapLong2Int, false);
+        /**
+         * Retrieve largest connected component of sub-graph induced by YES user
+         */
+        MappedWeightedGraph yesLccGraph = GraphAnalysis.extractLargestCC(graph, topYesUsersIds, mapLong2Int, false);
+
+        /**
+         * Compute top 1000 hub and authority users from YES sub-graph
+         */
         GraphAnalysis.saveTopKAuthorities(yesLccGraph, mapLong2Int, 1000, AppConfigs.YES_USERS_TOP_AUTHORITIES, userIntIdScreenNameHashMap);
 
         System.out.println("Computing yes user authorities completed ...");
@@ -124,7 +122,14 @@ public class UserAnalysis {
         System.out.println("Computing no user authorities ...");
 
         int[] topNoUsersIds = UserAnalysisUtility.getIntMappedUserIds(topNoUsersByTweetCount.stream().toArray(String[]::new), mapLong2Int);
-        MappedWeightedGraph noLccGraph = GraphAnalysis.extractLargestCCofM(graph, topNoUsersIds, mapLong2Int, false);
+        /**
+         * Retrieve largest connected component of sub-graph induced by NO user
+         */
+        MappedWeightedGraph noLccGraph = GraphAnalysis.extractLargestCC(graph, topNoUsersIds, mapLong2Int, false);
+
+        /**
+         * Compute top 1000 hub and authority users from NO sub-graph
+         */
         GraphAnalysis.saveTopKAuthorities(noLccGraph, mapLong2Int, 1000, AppConfigs.NO_USERS_TOP_AUTHORITIES, userIntIdScreenNameHashMap);
 
         System.out.println("Computing no user authorities completed ...");
@@ -135,10 +140,12 @@ public class UserAnalysis {
         GraphAnalysis.identifyTopKPlayers(graph, mapLong2Int, topNoUsersIds, AppConfigs.NO_USERS_500KPP, userIntIdScreenNameHashMap);
     }
 
-
-
-
     // ... CREATE USER TWEET COUNT (ALL , YES/NO POLITICIANS) LIST ... //
+
+    /**
+     * Counts number of mentions for yes/no politicians and classify users to yes/no group
+     * @throws Exception
+     */
     public static void generateUserPoliticianMap() throws Exception {
 
         System.out.println("==================================");
@@ -198,6 +205,11 @@ public class UserAnalysis {
 
     // ... CREATE USER-YES_POLITICIAN MAP INDEX ... //
     // ... CREATE USER-NO_POLITICIAN MAP INDEX ... //
+
+    /**
+     * Creates separate user_politician map indexes for yes and no politicians
+     * @throws Exception
+     */
     public static void buildYesNoUserPoliticianIndex() throws Exception {
 
         StandardAnalyzer analyzer = new StandardAnalyzer(Version.LUCENE_41);
@@ -244,6 +256,10 @@ public class UserAnalysis {
     }
 
     // ... CREATE USER-POLITICIAN INDEX ... //
+    /**
+     * Creates user_politician map indexes all politicians
+     * @throws Exception
+     */
     public static void buildUserPoliticianIndex() throws Exception {
 
         System.out.println("================================");
@@ -286,6 +302,11 @@ public class UserAnalysis {
 
     // ... WRITE USER TWEETS TO INDEX ... //
     // ... WRITE UNIQUE USER IDENTIFIERS TO FILE ... //
+
+    /**
+     * Build tweet indexes for tweets which mention all politicians, also short-list those users and saves to csv file
+     * @throws Exception
+     */
     public static void buildUserTweetIndex() throws Exception {
 
         System.out.println("=============================");

@@ -2,7 +2,6 @@ package structure;
 
 import gnu.trove.map.TIntLongMap;
 import it.stilo.g.structures.WeightedDirectedGraph;
-import it.stilo.g.structures.WeightedGraph;
 
 public class MappedWeightedGraph {
 
