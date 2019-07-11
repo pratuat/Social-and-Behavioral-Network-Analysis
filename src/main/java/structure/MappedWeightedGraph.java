@@ -1,19 +1,20 @@
 package structure;
 
 import gnu.trove.map.TIntLongMap;
+import it.stilo.g.structures.WeightedDirectedGraph;
 import it.stilo.g.structures.WeightedGraph;
 
 public class MappedWeightedGraph {
 
-    private WeightedGraph g;
+    private WeightedDirectedGraph g;
     private TIntLongMap map;
 
-    public MappedWeightedGraph(WeightedGraph g, TIntLongMap map) {
+    public MappedWeightedGraph(WeightedDirectedGraph g, TIntLongMap map) {
         this.g = g;
         this.map = map;
     }
 
-    public WeightedGraph getWeightedGraph() {
+    public WeightedDirectedGraph getWeightedGraph() {
         return this.g;
     }
 
@@ -21,7 +22,7 @@ public class MappedWeightedGraph {
         return this.map;
     }
 
-    public void setWeightedGraph(WeightedGraph g) {
+    public void setWeightedGraph(WeightedDirectedGraph g) {
         this.g = g;
     }
 

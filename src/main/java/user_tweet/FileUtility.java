@@ -5,7 +5,9 @@ import com.opencsv.CSVReader;
 
 import java.io.*;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class FileUtility {
     public static List<String> listPoliticianIds(String filename){
@@ -27,7 +29,7 @@ public class FileUtility {
         return politician_ids;
     }
 
-    public static List<String> loadColumnsFromCSV(String fileName, int columnIndex){
+    public static String[] loadColumnsFromCSV(String fileName, int columnIndex){
 
         List<String> column = new ArrayList<>();
 
@@ -43,7 +45,7 @@ public class FileUtility {
             System.out.println(e.getStackTrace());
         }
 
-        return column;
+        return column.stream().toArray(String[]::new);
     }
 
     public static PrintWriter getPrintWriter(String fileName) throws IOException {
@@ -60,28 +62,54 @@ public class FileUtility {
         int len = objects.length;
 
         for (int i=0; i<len; i++) {
-            System.out.println("Writing " + i + "/" + len);
             writer.write(objects[i] + "\n");
         }
 
         writer.close();
     }
 
-//    public static List<Integer> list_all_user_ids(){
-//        List<Integer> user_ids = new ArrayList<Integer>();
-//
-//        try {
-//            try (CSVReader csvReader = new CSVReader(new FileReader(AppConfigs.OUTPUT_PATH + "all_user_ids.csv"));) {
-//                String[] values = null;
-//                while ((values = csvReader.readNext()) != null) {
-//                    user_ids.add(Integer.valueOf(values[0]));
-//                }
-//            }
-//
-//        } catch (Exception e) {
-//            System.out.println(e.getStackTrace());
-//        }
-//
-//        return user_ids;
-//    }
+    public static List<String[]> loadCSV(String fileName){
+
+        List<String[]> dataFrame = new ArrayList<>();
+
+        try {
+            try (CSVReader csvReader = new CSVReader(new FileReader(fileName));) {
+                String[] row = null;
+                while ((row = csvReader.readNext()) != null) {
+                    dataFrame.add(row);
+                }
+            }
+
+        } catch (Exception e) {
+            System.out.println(e.getStackTrace());
+        }
+
+        return dataFrame;
+    }
+
+    public static List<String[]> loadSortCSV(String fileName, int sortIndex) {
+
+        List<String[]> userData = loadCSV(AppConfigs.USER_TWEET_COUNT);
+
+        Comparator<String[]> comparator = new Comparator<String[]>() {
+            @Override
+            public int compare(String[] ra, String[] rb) {
+                Integer a = new Integer(Integer.parseInt(ra[sortIndex].trim()));
+                Integer b = new Integer(Integer.parseInt(rb[sortIndex].trim()));
+
+                return a.compareTo(b);
+            }
+        };
+
+        userData.sort(comparator.reversed());
+
+        return userData;
+    }
+
+    public static List<String[]> loadSortFilterCSV(String fileName, int sortIndex, int filterIndex, String filter) {
+
+        List<String[]> userData = loadSortCSV(fileName, sortIndex);
+
+        return userData.stream().filter((String[] row) -> row[filterIndex].trim().equals(filter)).collect(Collectors.toList());
+    }
 }

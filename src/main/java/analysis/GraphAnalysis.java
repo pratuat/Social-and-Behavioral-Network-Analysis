@@ -1,6 +1,7 @@
 package analysis;
 
 import com.AppConfigs;
+import com.google.common.graph.Graph;
 import com.google.common.primitives.Ints;
 import io.ReadFile;
 import io.TxtUtils;
@@ -18,7 +19,8 @@ import it.stilo.g.algo.SubGraphByEdgesWeight;
 import it.stilo.g.structures.Core;
 import it.stilo.g.util.NodesMapper;
 import java.io.IOException;
-import java.util.List;
+import java.util.*;
+
 import it.stilo.g.algo.SubGraph;
 import it.stilo.g.algo.UnionDisjoint;
 import it.stilo.g.structures.DoubleValues;
@@ -33,18 +35,13 @@ import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import static java.lang.Integer.min;
 import java.lang.reflect.InvocationTargetException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
-import java.util.Set;
+
 import org.apache.lucene.document.Document;
 import org.apache.lucene.queryparser.classic.ParseException;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import structure.MappedWeightedGraph;
 import structure.ReadTxtException;
+import user_tweet.FileUtility;
 import utils.GraphUtils;
 
 public abstract class GraphAnalysis {
@@ -221,153 +218,43 @@ public abstract class GraphAnalysis {
         }
     }
 
-    public static void extractKCoreAndConnectedComponent(double threshold) throws IOException, ParseException, Exception {
+    public static void identifyTopKPlayers(WeightedDirectedGraph graph, LongIntDict longIntDict, int[] userIds, String fileName, HashMap<Long, String> userIntIdScreenNameHashMap) throws InterruptedException, IOException {
+        WeightedDirectedGraph subGrpah = SubGraph.extract(graph, userIds, runner);
+        TIntLongMap intLongDict = longIntDict.getInverted();
 
-        // do the same analysis for the yes-group and no-group
-        String[] prefixYesNo = {"yes", "no"};
-        for (String prefix : prefixYesNo) {
+        // FILTER NODES WITH DEGREES LESSER THAN THRESHOLD //
 
-            // Get the number of clusters
-            int c = getNumberClusters(AppConfigs.RESOURCES_DIR + prefix + "_graph.txt");
+        int threshold = 15;
+        ArrayList<Integer> subGraphNodes = new ArrayList<>();
 
-            // Get the number of nodes inside each cluster
-            List<Integer> numberNodes = getNumberNodes(AppConfigs.RESOURCES_DIR + prefix + "_graph.txt", c);
-
-            PrintWriter pw_cc = new PrintWriter(new FileWriter(AppConfigs.RESOURCES_DIR + prefix + "_largestcc.txt")); //open the file where the largest connected component will be written to
-            PrintWriter pw_kcore = new PrintWriter(new FileWriter(AppConfigs.RESOURCES_DIR + prefix + "_kcore.txt")); //open the file where the kcore will be written to
-
-            // create the array of graphs
-            WeightedUndirectedGraph[] gArray = new WeightedUndirectedGraph[c];
-            for (int i = 0; i < c; i++) {
-                System.out.println();
-                System.out.println("Cluster " + i);
-
-                gArray[i] = new WeightedUndirectedGraph(numberNodes.get(i) + 1);
-
-                // Put the nodes,
-                NodesMapper<String> mapper = new NodesMapper<String>();
-                gArray[i] = addNodesGraph(gArray[i], i, AppConfigs.RESOURCES_DIR + prefix + "_graph.txt", mapper);
-
-                //normalize the weights
-                gArray[i] = normalizeGraph(gArray[i]);
-
-                AtomicDouble[] info = GraphInfo.getGraphInfo(gArray[i], 1);
-                System.out.println("Nodes:" + info[0]);
-                System.out.println("Edges:" + info[1]);
-                System.out.println("Density:" + info[2]);
-
-                // extract remove the edges with w<t
-                gArray[i] = SubGraphByEdgesWeight.extract(gArray[i], threshold, 1);
-
-                // get the largest CC and save to a file
-                WeightedUndirectedGraph largestCC = getLargestCC(gArray[i]);
-                saveGraphToFile(pw_cc, mapper, largestCC.in, i);
-
-                // Get the inner core and save to a file
-                WeightedUndirectedGraph kcore = kcore(gArray[i]);
-                saveGraphToFile(pw_kcore, mapper, kcore.in, i);
-            }
-
-            pw_cc.close();
-            pw_kcore.close();
-        }
-    }
-
-    /*
-    Iterate through the file of kcore/CC identifying each cluster and
-    storing it as a hashmap that the keys are the cluster IDs and the
-    values are the sets.
-    Ex:
-        "0": {"hi", "hello"}
-        "1": {"Brazil", "Spain"}
-     */
-    public static HashMap<Integer, LinkedHashSet<String>> loadClusters(String clusterDirectory) throws IOException {
-        FileInputStream is = new FileInputStream(clusterDirectory);
-        InputStreamReader ir = new InputStreamReader(is);
-        BufferedReader br = new BufferedReader(ir);
-        String line;
-        String[] lineSplit;
-        String term;
-        Integer clusterID;
-        LinkedHashSet<String> cluster;
-        HashMap<Integer, LinkedHashSet<String>> hmClusterIDTerms = new HashMap<>();
-        while ((line = br.readLine()) != null) {
-            lineSplit = line.split(" ");
-            term = lineSplit[0];
-            clusterID = Integer.parseInt(lineSplit[2]);
-
-            //update the cluster 'clusterID' adding 'term'. Instantiate the cluster if it's empty
-            if ((cluster = hmClusterIDTerms.get(clusterID)) == null) {
-                cluster = new LinkedHashSet<>();
-            }
-            cluster.add(term);
-            hmClusterIDTerms.put(clusterID, cluster);
-        }
-
-        return hmClusterIDTerms;
-    }
-
-    public static LinkedHashSet<Integer> getUsersMentionedPolitician(boolean useCache, LongIntDict mapLong2Int) throws ReadTxtException, ParseException, IOException {
-        HashMap<String, LinkedHashSet<Integer>> hmGroupType2Users = new HashMap<>(); //data structure that will keep the two sets of users (for yes and no group)
-        List<String> userMentionPolitician;
-        double counter;
-        String username;
-        long id;
-        Document[] docs;
-
-        if (!useCache) {
-            // iterate through the yes and no group extracting all the users that mentioned
-            // a politician
-            String[] typeGroups = {"yes", "no"};
-
-            for (String typeGroup : typeGroups) {
-                LinkedHashSet<Integer> usersUnique = new LinkedHashSet<>();
-
-                // retrieve the twitter id of the users, instead of the name, given that
-                // the graph uses the ID
-                userMentionPolitician = TxtUtils.txtToList(AppConfigs.RESOURCES_DIR + typeGroup + "_users_mention_politicians.txt");
-
-                // retrieve all the unique users that mentioned the politicians
-                counter = 0.0;
-
-                for (String row : userMentionPolitician) {
-                    System.out.println("Calculating authorities: " + counter / userMentionPolitician.size() * 100.0 + " % Done");
-                    counter += 1.0;
-
-                    username = row.split(" ")[0];  // get the user screen name
-                    try {
-                        docs = searcher.searchByField("screenName", username, 1);
-                        id = Long.parseLong(docs[0].get("userId"));  //read just the first resulting doc
-                        // System.out.println(">> Document Length: " + username + "\t" + docs.length);
-                        usersUnique.add(mapLong2Int.get(id));  // retrieve the twitter ID (long) and covert to int
-
-                    } catch (NullPointerException e){
-                        // System.out.println(">> Docs null");
-                    }
-                }
-                hmGroupType2Users.put(typeGroup, usersUnique);
-            }
-            // save the set of users
-            TxtUtils.iterableToTxt(AppConfigs.RESOURCES_DIR + "no_unique_users_mention_politician.txt", hmGroupType2Users.get("no"));
-            TxtUtils.iterableToTxt(AppConfigs.RESOURCES_DIR + "yes_unique_users_mention_politician.txt", hmGroupType2Users.get("yes"));
-
-        } else {
-            try {
-                hmGroupType2Users.put("no", new LinkedHashSet(txtToList(AppConfigs.RESOURCES_DIR + "no_unique_users_mention_politician.txt", Integer.class)));
-                hmGroupType2Users.put("yes", new LinkedHashSet(txtToList(AppConfigs.RESOURCES_DIR + "yes_unique_users_mention_politician.txt", Integer.class)));
-            } catch (Exception ex) {
-                throw new ReadTxtException();
+        for (int i = 1; i < subGrpah.out.length; i++) {
+            if ((subGrpah.out[i] != null && subGrpah.out[i].length >= threshold) || (subGrpah.in[i] != null && subGrpah.in[i].length >= threshold)) {
+                subGraphNodes.add(i);
             }
         }
 
-        // creates a unique set with all the unique users
-        LinkedHashSet<Integer> users = new LinkedHashSet<>(hmGroupType2Users.get("no"));
-        users.addAll(hmGroupType2Users.get("yes"));
+        System.out.println(">>> Original user length: " + userIds.length);
+        System.out.println(">>> Filtered user length: " + subGraphNodes.toArray().length);
 
-        return users;
+        List<DoubleValues> brokers = KppNeg.searchBroker(subGrpah, subGraphNodes.stream().mapToInt((i) -> i).toArray(), runner);
+        brokers.sort((new HubAuthorityComparator()).reversed());
+
+        DoubleValues[] brokersArray = brokers.subList(0, 500).stream().toArray(DoubleValues[]::new);
+
+        Long brokerId;
+        String brokerScreenName;
+        List<String> kpps = new ArrayList<>();
+
+        for (DoubleValues broker: brokersArray) {
+            brokerId = intLongDict.get(broker.index);
+            brokerScreenName = userIntIdScreenNameHashMap.get(brokerId);
+            kpps.add(String.format("%f, %s, %d", brokerId, brokerScreenName, broker.value));
+        }
+
+        FileUtility.writeToFile(fileName, kpps.toArray());
     }
 
-    public static MappedWeightedGraph extractLargestCCofM(WeightedDirectedGraph g, int[] usersIDs, LongIntDict mapLong2Int) throws InterruptedException, IOException {
+    public static MappedWeightedGraph extractLargestCCofM(WeightedDirectedGraph g, int[] usersIDs, LongIntDict mapLong2Int, boolean saveToFile) throws InterruptedException, IOException {
         // extract the subgraph induced by the users that mentioned the politicians
         System.out.println("Extracting the subgraph induced by M");
         g = SubGraph.extract(g, usersIDs, runner);
@@ -395,154 +282,51 @@ public abstract class GraphAnalysis {
         // save the largest CC of M
         System.out.println("Saving the graph");
         TIntLongMap revDictResize = dictResize.getInverted();
-        GraphUtils.saveDirectGraph2Mappings(g, AppConfigs.RESOURCES_DIR + "graph_largest_cc_of_M.gz", revDictResize, mapLong2Int.getInverted());
+
+        if (saveToFile)
+            GraphUtils.saveDirectGraph2Mappings(g, AppConfigs.USER_GRAPH_LCC_PATH, revDictResize, mapLong2Int.getInverted());
 
         return new MappedWeightedGraph(g, revDictResize);
     }
 
-    public static void saveTopKAuthorities(MappedWeightedGraph gmap, LinkedHashSet<Integer> users, LongIntDict mapLong2Int, int topk, boolean useCache) throws InterruptedException, IOException {
-        WeightedGraph g = gmap.getWeightedGraph();
-        TIntLongMap mapInt2Long = gmap.getMap();
+    public static void saveTopKAuthorities(MappedWeightedGraph graph, LongIntDict mapLong2Int, int topk, String fileName, HashMap<Long, String> userIntIdScreenNameHashMap) throws InterruptedException, IOException {
+        TIntLongMap mapInt2LongSuper = mapLong2Int.getInverted();
+        TIntLongMap mapInt2Long = graph.getMap();
 
         // get the authorities
-        ArrayList<ArrayList<DoubleValues>> authorities = HubnessAuthority.compute(g, 0.00001, runner);
-        ArrayList<DoubleValues> scores = authorities.get(0);
+        ArrayList<ArrayList<DoubleValues>> hubAuthorities = HubnessAuthority.compute(graph.getWeightedGraph(), 0.00001, runner);
 
-        // map back the ids in 'score' to the previous id, before the resizing, then map back to the twitter ID
-        ArrayList<DoubleValues> scoreMappedID = new ArrayList<>();
-        for (DoubleValues score : scores) {
-            scoreMappedID.add(new DoubleValues((int) mapInt2Long.get(score.index), score.value));
+        // sort users by authority and hub score
+        hubAuthorities.get(0).sort((new HubAuthorityComparator()).reversed());
+        hubAuthorities.get(1).sort((new HubAuthorityComparator()).reversed());
+
+        DoubleValues[] authorityScores = hubAuthorities.get(0).subList(0, topk).stream().toArray(DoubleValues[]::new);
+        DoubleValues[] hubScores = hubAuthorities.get(1).subList(0, topk).stream().toArray(DoubleValues[]::new);
+
+        List<String> authorityScoreList = new ArrayList<>();
+        List<String> hubScoreList = new ArrayList<>();
+
+        long authorityIndex, hubIndex;
+        String authorityScreenName, hubScreenName;
+
+        for (int i = 0; i < authorityScores.length; i++) {
+            authorityIndex = mapInt2LongSuper.get((int)mapInt2Long.get(authorityScores[i].index));
+            hubIndex = mapInt2LongSuper.get((int)mapInt2Long.get(hubScores[i].index));
+            authorityScreenName = userIntIdScreenNameHashMap.get(authorityIndex);
+            hubScreenName = userIntIdScreenNameHashMap.get(hubIndex);
+
+            authorityScoreList.add(String.format("%d, %s, %f", authorityIndex, authorityScreenName, authorityScores[i].value));
+            hubScoreList.add(String.format("%d, %s, %f", hubIndex, hubScreenName, hubScores[i].value));
         }
 
-        scores = scoreMappedID;
-
-        // save the first topk authorities
-        TxtUtils.iterableToTxt(AppConfigs.RESOURCES_DIR + "top_authorities.txt", scores.subList(0, min(topk, scores.size())));
+        FileUtility.writeToFile(fileName + "_authorities.csv", authorityScoreList.toArray());
+        FileUtility.writeToFile(fileName + "_hubs.csv", hubScoreList.toArray());
     }
+}
 
-    public static void printAuthorities(TIntLongMap mapIntToLong) throws IOException, ParseException, InterruptedException, NoSuchMethodException, InstantiationException, IllegalAccessException, IllegalArgumentException, InvocationTargetException {
-
-        ArrayList<Integer> yesUniqueUsersMentionPolitician = txtToList(AppConfigs.RESOURCES_DIR + "yes_unique_users_mention_politician.txt", Integer.class);
-        ArrayList<Integer> noUniqueUsersMentionPolitician = txtToList(AppConfigs.RESOURCES_DIR + "no_unique_users_mention_politician.txt", Integer.class);
-        ArrayList<ArrayList> topAuthorities = txtToList(AppConfigs.RESOURCES_DIR + "top_authorities.txt", Integer.class, Double.class);
-
-        // initialize the summaryAuthority
-        LinkedHashMap<String, ArrayList> summaryAuthority = new LinkedHashMap<>();
-        summaryAuthority.put("yes", new ArrayList());
-        summaryAuthority.put("yesunique", new ArrayList());
-        summaryAuthority.put("no", new ArrayList());
-        summaryAuthority.put("nounique", new ArrayList());
-
-        for (ArrayList values : topAuthorities) {
-            // users that mentioned the yes supporters
-            if (yesUniqueUsersMentionPolitician.contains(values.get(0))) {
-                // summaryAuthority.put("yes",  summaryAuthority.get("yes").add(values.get(0)));
-                summaryAuthority.get("yes").add(values.get(0));
-                // users that mentioned the yes supporters but not the no supporters
-                if (!noUniqueUsersMentionPolitician.contains(values.get(0))) {
-                    //summaryAuthority.put("yesunique", summaryAuthority.get("yesunique") + 1);
-                    summaryAuthority.get("yesunique").add(values.get(0));
-                }
-            }
-            // users that mentioned the no supporters
-            if (noUniqueUsersMentionPolitician.contains(values.get(0))) {
-                //summaryAuthority.put("no", summaryAuthority.get("no") + 1);
-                summaryAuthority.get("no").add(values.get(0));
-
-                // users that mentioned the no supporters but not the yes supporters
-                if (!yesUniqueUsersMentionPolitician.contains(values.get(0))) {
-                    //summaryAuthority.put("nounique", summaryAuthority.get("nounique") + 1);
-                    summaryAuthority.get("nounique").add(values.get(0));
-                }
-
-            }
-        }
-
-        System.out.println(summaryAuthority.get("yes").size() + " of the top authorities mentioned the Yes supporters");
-        System.out.println(summaryAuthority.get("no").size() + " of the top authorities mentioned the No supporters");
-        System.out.println(summaryAuthority.get("yesunique").size() + " of the top authorities mentioned just the Yes supporters");
-        System.out.println(summaryAuthority.get("nounique").size() + " of the top authorities mentioned just the No supporters");
-        System.out.println();
-
-        Document[] docs;
-        Long twitterID;
-
-
-
-        // print the authorities that mentioned uniquely the Yes supporters
-        System.out.println("---------Top authorities that mentioned just the Yes supporters---------");
-        for (Object userID : summaryAuthority.get("yesunique")) {
-            twitterID = mapIntToLong.get((int) userID);
-            docs = searcher.searchByField("id", twitterID, 1);
-
-            if (docs != null) {
-                System.out.println(docs[0].get("user"));
-            }
-        }
-
-        // print the authorities that mentioned uniquely the No supporters
-        System.out.println("---------Top authorities that mentioned just the No supporters---------");
-        for (Object userID : summaryAuthority.get("nounique")) {
-            twitterID = mapIntToLong.get((int) userID);
-            docs = searcher.searchByField("id", twitterID, 1);
-
-            if (docs != null) {
-                System.out.println(docs[0].get("user"));
-            }
-        }
+class HubAuthorityComparator implements Comparator<DoubleValues> {
+    @Override
+    public int compare(DoubleValues x, DoubleValues y) {
+        return (new Double(x.value)).compareTo(new Double(y.value));
     }
-
-    /*
-    The method receives a graph, extract the nodes that have a degree higher than threshold,
-    and finally calculate their reachability using the KppNeg algorithm. The top 500
-    players are saved in disk
-     */
-    public static List<ImmutablePair> getTopKPlayers(WeightedDirectedGraph g, int[] nodes, LongIntDict mapLong2Int, int topk, int threshold) throws InterruptedException, IOException, ParseException {
-        ArrayList<Integer> subGraphNodes = new ArrayList<>();
-
-        // extract just the graph induced by nodes.
-        g = SubGraph.extract(g, nodes, runner);
-
-        // iterate through the graph and add to a list just the nodes with high degree
-        for (int i = 1; i < g.out.length; i++) {
-            if ((g.out[i] != null && g.out[i].length >= threshold) || (g.in[i] != null && g.in[i].length >= threshold)) {
-                subGraphNodes.add(i);
-            }
-        }
-
-        g = SubGraph.extract(g, subGraphNodes.stream().mapToInt(i -> i).toArray(), runner);
-
-        long start = System.currentTimeMillis();
-        List<DoubleValues> brokers = KppNeg.searchBroker(g, g.getVertex(), runner); //subGraphNodes.stream().mapToInt(i -> i).toArray()
-        long end = System.currentTimeMillis();
-        System.out.println("Took : " + ((end - start) / 1000) + " seconds");
-
-        // convert from the node position of the graph into the TwitterID, and then
-        // to the Twitter name
-        List<ImmutablePair> brokersUsername = new ArrayList<>();
-        TIntLongMap mapIntToLong = mapLong2Int.getInverted();
-        long twitterID;
-        Document[] docs;
-        String username;
-        for (DoubleValues broker : brokers) {
-            twitterID = mapIntToLong.get((int) broker.index);
-            docs = searcher.searchByField("id", twitterID, 1);
-
-            username = null;
-            if (docs != null) {
-                username = docs[0].get("user");
-                brokersUsername.add(new ImmutablePair<String, Double>(username, broker.value));
-            } else {
-                docs = searcher.searchByField("rt_id", twitterID, 1);
-                if (docs != null) {
-                    username = docs[0].get("rt_user");
-                    brokersUsername.add(new ImmutablePair<String, Double>(username, broker.value));
-                }
-
-            }
-        }
-
-        return brokersUsername.subList(0, min(topk, brokersUsername.size()));
-    }
-
 }

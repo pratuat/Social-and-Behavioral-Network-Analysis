@@ -2,12 +2,14 @@ package user_tweet;
 
 import analysis.GraphAnalysis;
 import com.AppConfigs;
-import io.ReadFile;
-import io.TxtUtils;
+import gnu.trove.map.TIntLongMap;
+import it.stilo.g.algo.HubnessAuthority;
+import it.stilo.g.algo.KppNeg;
+import it.stilo.g.structures.DoubleValues;
 import it.stilo.g.structures.LongIntDict;
 import it.stilo.g.structures.WeightedDirectedGraph;
+import it.stilo.g.structures.WeightedGraph;
 import it.stilo.g.util.GraphReader;
-import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
@@ -25,9 +27,10 @@ import org.apache.lucene.util.Version;
 import structure.MappedWeightedGraph;
 import twitter4j.JSONException;
 
-import java.util.LinkedHashSet;
+import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
-import java.util.zip.GZIPInputStream;
+import java.util.stream.Collectors;
 
 import static io.TxtUtils.txtToList;
 import static user_tweet.IndexUtility.*;
@@ -36,156 +39,132 @@ public class UserAnalysis {
 
     public static IndexSearcher allTweetIndexSearcher;
     public static IndexSearcher userTweetIndexSearcher;
+    public static IndexSearcher userPoliticianIndexSearcher;
+    public static IndexSearcher yesUserTweetIndexSearcher;
+    public static IndexSearcher noUserTweetIndexSearcher;
 
-    public static String[] allUsers;
+    public static HashMap<Long, String> userIntIdScreenNameHashMap= new HashMap<>();
 
-    static {
-        try {
-            allTweetIndexSearcher = getIndexSearcher(AppConfigs.ALL_TWEET_INDEX);
-            userTweetIndexSearcher = getIndexSearcher(AppConfigs.USER_TWEET_INDEX);
-        } catch (IOException e) {
-            e.printStackTrace();
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
+//    static {
+//        try {
+//            allTweetIndexSearcher = IndexUtility.getIndexSearcher(AppConfigs.ALL_TWEET_INDEX);
+//            userTweetIndexSearcher = IndexUtility.getIndexSearcher(AppConfigs.USER_TWEET_INDEX);
+//            userPoliticianIndexSearcher = IndexUtility.getIndexSearcher(AppConfigs.USER_POLITICIAN_INDEX);
+//        } catch (Exception e) {
+//            e.printStackTrace();
+//        }
+//    }
 
     public static void main(String[] args)  throws IOException, JSONException, ParseException, Exception {
 
-        if (false) {
-            buildUserTweetIndex();
-            buildUserPoliticianMapIndex();
-        }
+        buildUserTweetIndex();
+        buildUserPoliticianIndex();
+        buildYesNoUserPoliticianIndex();
+        generateUserPoliticianMap();
+        List[] topUsers = shortListUsers();
+        generateUserInducedSubGraphs(topUsers);
 
-        if (true) {
-            generateUserPoliticianMap();
-        }
     }
 
-    public static void mainn(String[] args)  throws IOException, JSONException, ParseException, Exception {
-
-        boolean build_user_tweet_index = false;
-        boolean loadGraph = true;
-        boolean calculateTopAuthorities = true;
-        boolean printAuthorities = true;
-        boolean calculateKplayers = true;
-        boolean useCache = false;
 
 
-        // Build tweet index with mentions of listed politicians
-        if (build_user_tweet_index) {
-            buildUserTweetIndex();
+    public static void generateUserInducedSubGraphs(List[] topUsers) throws IOException, InterruptedException {
+        System.out.println("=====================================");
+        System.out.println("Generating user induced subgraph ...");
+
+        List<String> topUsersByTweetCount = topUsers[0];
+        List<String> topYesUsersByTweetCount = topUsers[1];
+        List<String> topNoUsersByTweetCount = topUsers[2];
+
+        // ... LOAD USER_ID-SCREEN_NAME HASH-MAP ... //
+
+        String[] screenNames = FileUtility.loadColumnsFromCSV(AppConfigs.USER_TWEET_COUNT, 1);
+        String[] longIds = FileUtility.loadColumnsFromCSV(AppConfigs.USER_TWEET_COUNT, 0);
+
+        for (int i = 0; i < longIds.length; i++) {
+            userIntIdScreenNameHashMap.put(Long.parseLong(longIds[i]), screenNames[i]);
         }
 
-        ArrayList<String> usersList;
-        int[] nodes;
-        Document[] docs;
-        long id;
-        int i;
+        // ... LOAD ORIGINAL GRAPH ... //
 
-        String[] prefixYesNo = {"yes", "no"};
+        System.out.println("Loading graph ...");
 
-        WeightedDirectedGraph g = null;
+        int graphSize = 16815933;
         LongIntDict mapLong2Int = new LongIntDict();
-        int graphSize = 0;
-        String graphFilename = "";
+        WeightedDirectedGraph graph = new WeightedDirectedGraph(graphSize + 1);
+        GraphReader.readGraphLong2IntRemap(graph, AppConfigs.USER_GRAPH_PATH, mapLong2Int, false);
 
-        // loadGraph = false;
-        if (loadGraph) {
-            System.out.println(">> Start: Load graph.");
-            graphSize = 16815933;
-            g = new WeightedDirectedGraph(graphSize + 1);
-            GraphReader.readGraphLong2IntRemap(g, AppConfigs.RESOURCES_DIR + "Official_SBN-ITA-2016-Net.gz", mapLong2Int, false);
-            System.out.println(">> Success: Load graph.");
-        }
+        System.out.println("Loading graph completed ...");
 
-        if (calculateTopAuthorities) {
-            System.out.println(">> Start: Calculate Top Authorities.");
-            LinkedHashSet<Integer> users = GraphAnalysis.getUsersMentionedPolitician(useCache, mapLong2Int);
+        // ... EXTRACT LARGEST CONNECTED COMPONENT AND RETRIEVE TOP AUTHORITY [ ALL USERS ]... //
 
-            System.out.println("User size: " + users.size());
+        System.out.println("-------------------------------------");
+        System.out.println("Computing all user authorities ...");
 
-           // convert the set to array of int, needed by the method "SubGraph.extract"
-            int[] usersIDs = new int[users.size()];
-            i = 0;
+        int[] topUsersIds = UserAnalysisUtility.getIntMappedUserIds(topUsersByTweetCount.stream().toArray(String[]::new), mapLong2Int);
+        MappedWeightedGraph lccGraph = GraphAnalysis.extractLargestCCofM(graph, topUsersIds, mapLong2Int, true);
+        GraphAnalysis.saveTopKAuthorities(lccGraph, mapLong2Int, 2000, AppConfigs.ALL_USERS_TOP_AUTHORITIES, userIntIdScreenNameHashMap);
 
-            for (Integer userId : users) {
-                usersIDs[i] = userId;
-                i++;
-            }
+        System.out.println("Computing all user authorities completed ...");
 
-            MappedWeightedGraph gmap = GraphAnalysis.extractLargestCCofM(g, usersIDs, mapLong2Int);
-            GraphAnalysis.saveTopKAuthorities(gmap, users, mapLong2Int, 1000, useCache);
-            TweetsOpinion.saveTop500HubnessAuthorities(gmap, users, mapLong2Int, 3);
-            TweetsOpinion.hubnessGraph13();
-            System.out.println(">> Success: Calculate Top Authorities.");
-        }
+        // ... EXTRACT LARGEST CONNECTED COMPONENT AND RETRIEVE TOP AUTHORITY [ YES USERS ]... //
 
-        if (printAuthorities) {
-            System.out.println(">> Start: Print top authorities.");
-            GraphAnalysis.printAuthorities(mapLong2Int.getInverted());
-            System.out.println(">> Success: Print top authorities.");
-        }
+        System.out.println("-------------------------------------");
+        System.out.println("Computing yes user authorities ...");
 
-        if (calculateKplayers) {
-            System.out.println(">> Start: Calculate K playes.");
-            graphFilename = AppConfigs.RESOURCES_DIR + "graph_largest_cc_of_M.gz";
-            GZIPInputStream gzipIS = new GZIPInputStream(new FileInputStream(graphFilename));
-            graphSize = (int) ReadFile.getLineCount(gzipIS);
-            g = new WeightedDirectedGraph(graphSize + 1);
-            mapLong2Int = new LongIntDict();
+        int[] topYesUsersIds = UserAnalysisUtility.getIntMappedUserIds(topYesUsersByTweetCount.stream().toArray(String[]::new), mapLong2Int);
+        MappedWeightedGraph yesLccGraph = GraphAnalysis.extractLargestCCofM(graph, topYesUsersIds, mapLong2Int, false);
+        GraphAnalysis.saveTopKAuthorities(yesLccGraph, mapLong2Int, 1000, AppConfigs.YES_USERS_TOP_AUTHORITIES, userIntIdScreenNameHashMap);
 
-            for (String supportType : prefixYesNo) {
-                usersList = txtToList(AppConfigs.RESOURCES_DIR + supportType + "_M.txt", String.class); // retrieve the users names
-                nodes = new int[usersList.size()];
-                i = 0;
-                // from the users names to their Twitter ID, then to their respective position in the graph (int)
-                // name -> twitterID -> position in the graph
-//                for (String username : usersList) {
-//                    docs = allTweetIndexSearcher.searchByField("name", username, 1);
-//
-//                    if (docs != null) {
-//                        id = Long.parseLong(docs[0].get("userId"));  //read just the first resulting doc
-//                        nodes[i] = mapLong2Int.get(id);  // retrieve the twitter ID (long) and covert to int (the position in the graph)
-//                    }
-//                    i++;
-//                }
+        System.out.println("Computing yes user authorities completed ...");
 
-                List<ImmutablePair> brokersUsername = GraphAnalysis.getTopKPlayers(g, nodes, mapLong2Int, 500, 1);
-                // save the first topk authorities
-                TxtUtils.iterableToTxt(AppConfigs.RESOURCES_DIR + supportType + "_top_k_players.txt", brokersUsername);
-            }
+        // ... EXTRACT LARGEST CONNECTED COMPONENT AND RETRIEVE TOP AUTHORITY [ NO USERS ]... //
 
-            System.out.println(">> Success: Calculate K playes.");
-        }
+        System.out.println("-------------------------------------");
+        System.out.println("Computing no user authorities ...");
 
+        int[] topNoUsersIds = UserAnalysisUtility.getIntMappedUserIds(topNoUsersByTweetCount.stream().toArray(String[]::new), mapLong2Int);
+        MappedWeightedGraph noLccGraph = GraphAnalysis.extractLargestCCofM(graph, topNoUsersIds, mapLong2Int, false);
+        GraphAnalysis.saveTopKAuthorities(noLccGraph, mapLong2Int, 1000, AppConfigs.NO_USERS_TOP_AUTHORITIES, userIntIdScreenNameHashMap);
+
+        System.out.println("Computing no user authorities completed ...");
+
+        System.out.println("----------------------------------");
+        System.out.println("Computing KPP-NEG");
+        GraphAnalysis.identifyTopKPlayers(graph, mapLong2Int, topYesUsersIds, AppConfigs.YES_USERS_500KPP, userIntIdScreenNameHashMap);
+        GraphAnalysis.identifyTopKPlayers(graph, mapLong2Int, topNoUsersIds, AppConfigs.NO_USERS_500KPP, userIntIdScreenNameHashMap);
     }
 
+
+
+
+    // ... CREATE USER TWEET COUNT (ALL , YES/NO POLITICIANS) LIST ... //
     public static void generateUserPoliticianMap() throws Exception {
 
         System.out.println("==================================");
         System.out.println("Generating user-politician map ...");
 
-        Document document;
-        TopDocs topDocs;
+        int yesTopDocs;
+        int noTopDocs;
+        String userOpinion;
         Query query;
-        PrintWriter writer;
         StandardAnalyzer analyzer;
         QueryParser queryParser;
         String screenName;
         String id;
 
-        IndexSearcher userPoliticianIndexSearcher = IndexUtility.getIndexSearcher(AppConfigs.USER_POLITICIAN_INDEX);
+
+        IndexSearcher userYesPoliticianIndexSearcher = IndexUtility.getIndexSearcher(AppConfigs.USER_YES_POLITICIAN_INDEX);
+        IndexSearcher userNoPoliticianIndexSearcher = IndexUtility.getIndexSearcher(AppConfigs.USER_NO_POLITICIAN_INDEX);
 
         // load all user screen names from file.
-        Object[] allUserIds = FileUtility.loadColumnsFromCSV(AppConfigs.ALL_USER, 0).toArray();
-        Object[] allUserScreenNames = FileUtility.loadColumnsFromCSV(AppConfigs.ALL_USER, 1).toArray();
+        String[] allUserIds = FileUtility.loadColumnsFromCSV(AppConfigs.ALL_USER, 0);
+        String[] allUserScreenNames = FileUtility.loadColumnsFromCSV(AppConfigs.ALL_USER, 1);
 
         analyzer = new StandardAnalyzer(Version.LUCENE_41);
         queryParser = new QueryParser(Version.LUCENE_41, "", analyzer);
 
         List<String> userTweetCount = new ArrayList<>();
-        List<String> userPoliticianMention = new ArrayList<>();
 
         int len = allUserScreenNames.length;
 
@@ -193,32 +172,79 @@ public class UserAnalysis {
 
             System.out.println("Processing user: " + i + "/" + len);
 
-            id = (String)allUserIds[i];
-            screenName = (String)allUserScreenNames[i];
+            id = allUserIds[i];
+            screenName = allUserScreenNames[i];
             query = queryParser.parse("userScreenName: " + screenName);
 
-            topDocs = userPoliticianIndexSearcher.search(query, Integer.MAX_VALUE);
+            // count user's mention of yes and no politicians
+            yesTopDocs = userYesPoliticianIndexSearcher.search(query, Integer.MAX_VALUE).scoreDocs.length;
+            noTopDocs = userNoPoliticianIndexSearcher.search(query, Integer.MAX_VALUE).scoreDocs.length;
 
-            userTweetCount.add(id + ", " + screenName + ", " + topDocs.scoreDocs.length);
+            if (yesTopDocs > noTopDocs)
+                userOpinion = "yes";
+            else if (yesTopDocs < noTopDocs)
+                userOpinion = "no";
+            else
+                userOpinion = "neutral";
 
-            for (ScoreDoc scoreDoc: topDocs.scoreDocs) {
-                document = userPoliticianIndexSearcher.doc(scoreDoc.doc);
-                userPoliticianMention.add(String.format("%s, %s, %s", id, screenName, document.get("politicianScreenName")));
-            }
+            userTweetCount.add(id + ", " + screenName + ", " + (yesTopDocs + noTopDocs) + ", " + yesTopDocs + ", " + noTopDocs  + ", "  + userOpinion);
+
         }
 
-        String[] userPoliticianMap = userPoliticianMention.stream().distinct().toArray(String[]::new);
-
-        // System.out.println("No. of total user_politician mention: " + userPoliticianMention.toArray().length);
-        // System.out.println("No. of unique user_politician map: " + userPoliticianMap.length);
-
         FileUtility.writeToFile(AppConfigs.USER_TWEET_COUNT, userTweetCount.toArray());
-        FileUtility.writeToFile(AppConfigs.USER_POLITICIAN_MAP, userPoliticianMap);
 
         System.out.println("----------------------------------");
     }
-    
-    public static void buildUserPoliticianMapIndex() throws Exception {
+
+    // ... CREATE USER-YES_POLITICIAN MAP INDEX ... //
+    // ... CREATE USER-NO_POLITICIAN MAP INDEX ... //
+    public static void buildYesNoUserPoliticianIndex() throws Exception {
+
+        StandardAnalyzer analyzer = new StandardAnalyzer(Version.LUCENE_41);
+        List<Document> documents;
+
+        // ... CREATE USER-YES_POLITICIAN MAP INDEX ... //
+
+        String[] yesPoliticians = FileUtility.loadColumnsFromCSV(AppConfigs.YES_POLITICIANS, 0);
+        Query query = UserAnalysisUtility.getPoliticiansQuery("politicianScreenName", yesPoliticians);
+        TopDocs topDocs = userPoliticianIndexSearcher.search(query, Integer.MAX_VALUE);
+        documents = new ArrayList<>();
+
+        System.out.println("no. of yes politicians: " + yesPoliticians.length);
+        System.out.println("yes politicians mentions: " + topDocs.scoreDocs.length);
+
+        for (ScoreDoc scoreDoc: topDocs.scoreDocs) {
+            documents.add(userPoliticianIndexSearcher.doc(scoreDoc.doc));
+        }
+
+        IndexWriter userYesPoliticianIndexWriter = IndexUtility.getIndexWriter(AppConfigs.USER_YES_POLITICIAN_INDEX, analyzer);
+        userYesPoliticianIndexWriter.addDocuments(documents);
+        userYesPoliticianIndexWriter.commit();
+        userYesPoliticianIndexWriter.close();
+
+        // ... CREATE USER-NO_POLITICIAN MAP INDEX ... //
+
+        String[] noPoliticians = FileUtility.loadColumnsFromCSV(AppConfigs.NO_POLITICIANS, 0);
+        query = UserAnalysisUtility.getPoliticiansQuery("politicianScreenName", noPoliticians);
+        topDocs = userPoliticianIndexSearcher.search(query, Integer.MAX_VALUE);
+        documents = new ArrayList<>();
+
+        System.out.println("no. of no politicians: " + noPoliticians.length);
+        System.out.println("no politicians mentions: " + topDocs.scoreDocs.length);
+
+        for (ScoreDoc scoreDoc: topDocs.scoreDocs) {
+            documents.add(userPoliticianIndexSearcher.doc(scoreDoc.doc));
+        }
+
+        IndexWriter userNoPoliticianIndexWriter = IndexUtility.getIndexWriter(AppConfigs.USER_NO_POLITICIAN_INDEX, analyzer);
+        userNoPoliticianIndexWriter.addDocuments(documents);
+        userNoPoliticianIndexWriter.commit();
+        userNoPoliticianIndexWriter.close();
+
+    }
+
+    // ... CREATE USER-POLITICIAN INDEX ... //
+    public static void buildUserPoliticianIndex() throws Exception {
 
         System.out.println("================================");
         System.out.println("Building user-politician map ...");
@@ -232,7 +258,7 @@ public class UserAnalysis {
         Document document;
         int counter = 0;
 
-        // ... CREATE USER-MAP INDEX ... //
+        // ... CREATE USER-POLITICIAN INDEX ... //
 
         for (ScoreDoc scoreDoc: topDocs.scoreDocs) {
             document = userTweetIndexSearcher.doc(scoreDoc.doc);
@@ -240,8 +266,8 @@ public class UserAnalysis {
 
             for (String politician: document.get("mentioned").split(" ")) {
                 newDocument = new Document();
-                newDocument.add(new TextField("userScreenName", user, Field.Store.YES));
-                newDocument.add(new TextField("politicianScreenName", politician, Field.Store.YES));
+                newDocument.add(new TextField("userScreenName", user.trim(), Field.Store.YES));
+                newDocument.add(new TextField("politicianScreenName", politician.trim(), Field.Store.YES));
                 userPoliticianMapIndexWriter.addDocument(newDocument);
                 counter++;
             }
@@ -253,18 +279,24 @@ public class UserAnalysis {
         userPoliticianMapIndexWriter.commit();
         userPoliticianMapIndexWriter.close();
 
+        userPoliticianIndexSearcher = IndexUtility.getIndexSearcher(AppConfigs.USER_POLITICIAN_INDEX);
+
         System.out.println("--------------------------------");
     }
 
+    // ... WRITE USER TWEETS TO INDEX ... //
+    // ... WRITE UNIQUE USER IDENTIFIERS TO FILE ... //
     public static void buildUserTweetIndex() throws Exception {
 
         System.out.println("=============================");
         System.out.println("Building user tweet index ...");
 
-        List<String> all_politicians = FileUtility.listPoliticianIds(AppConfigs.ALL_POLITICIANS_LIST);
-        System.out.println("No. of Politicians: " + all_politicians.toArray().length);
+        allTweetIndexSearcher = getIndexSearcher(AppConfigs.ALL_TWEET_INDEX);
 
-        Query query = UserAnalysisUtility.getPoliticiansQuery(all_politicians);
+        String[] allPoliticians = FileUtility.listPoliticianIds(AppConfigs.ALL_POLITICIANS).stream().toArray(String[]::new);
+        System.out.println("No. of Politicians: " + allPoliticians.length);
+
+        Query query = UserAnalysisUtility.getPoliticiansQuery("mentioned", allPoliticians);
 
         TopDocs topDocs = allTweetIndexSearcher.search(query, Integer.MAX_VALUE);
         System.out.println("No. of tweet documents: " + topDocs.scoreDocs.length);
@@ -286,33 +318,46 @@ public class UserAnalysis {
         System.out.println("No. of users: " + unique_users.length);
 
         Analyzer analyzer = new StandardAnalyzer(Version.LUCENE_41);
-        IndexWriter user_tweet_index_writer = IndexUtility.getIndexWriter(AppConfigs.USER_TWEET_INDEX, analyzer);
-        user_tweet_index_writer.addDocuments(documents);
-        user_tweet_index_writer.commit();
-        user_tweet_index_writer.close();
+        IndexWriter userTweetIndexWriter = IndexUtility.getIndexWriter(AppConfigs.USER_TWEET_INDEX, analyzer);
+        userTweetIndexWriter.addDocuments(documents);
+        userTweetIndexWriter.commit();
+        userTweetIndexWriter.close();
 
         // ... WRITE UNIQUE USER IDENTIFIERS TO FILE ... //
 
-        PrintWriter printWriter = FileUtility.getPrintWriter(AppConfigs.ALL_USER);
+        FileUtility.writeToFile(AppConfigs.ALL_USER, unique_users);
 
-        for (String user: unique_users) {
-            printWriter.write(user + "\n");
-        }
-
-        printWriter.close();
+        userTweetIndexSearcher = getIndexSearcher(AppConfigs.USER_TWEET_INDEX);
 
         System.out.println("-----------------------------");
-
     }
 
-//    public static void
+    public static List[] shortListUsers() {
 
+        List<String> topUsersByTweetCount = FileUtility.loadSortCSV(AppConfigs.USER_TWEET_COUNT, 2).
+                stream().
+                map((row) -> row[0]).
+                collect(Collectors.toList());
 
+        List<String> topYesUsersByTweetCount = FileUtility.loadSortFilterCSV(AppConfigs.USER_TWEET_COUNT, 2, 5, "yes").
+                stream().
+                map((row) -> row[0]).
+                collect(Collectors.toList());
+
+        List<String> topNoUsersByTweetCount = FileUtility.loadSortFilterCSV(AppConfigs.USER_TWEET_COUNT, 2, 5, "no").
+                stream().
+                map((row) -> row[0]).
+                collect(Collectors.toList());
+
+        List[] list = {topUsersByTweetCount, topYesUsersByTweetCount, topNoUsersByTweetCount};
+
+        return list;
+    }
 }
 
 class UserAnalysisUtility {
 
-    public static Query getPoliticiansQuery(List<String> politicians) {
+    public static Query getPoliticiansQuery(String keyword, String[] politicians) {
 
         Query query = null;
 
@@ -322,11 +367,11 @@ class UserAnalysisUtility {
             List<String> query_tags = new ArrayList<String>();
 
             for(String name : politicians){
-                query_tags.add("mentioned:\"" + name + "\"");
+                query_tags.add(keyword + ":\"" + name + "\"");
             }
 
             String query_string = String.join(" OR ", query_tags);
-            System.out.println(query_string);
+            // System.out.println(query_string);
 
             query = new QueryParser(Version.LUCENE_41, "title", analyzer).parse(query_string);
 
@@ -337,9 +382,18 @@ class UserAnalysisUtility {
         return query;
     }
 
-    public static List<String> loadUsers() {
+    public static int[] getIntMappedUserIds(String[] userIds, LongIntDict longIntDict) {
 
-        return FileUtility.loadColumnsFromCSV(AppConfigs.ALL_USER, 0);
+        long id;
+        int[] intIds = new int[userIds.length];
+
+        for (int i=0; i<userIds.length; i++) {
+            id = Long.parseLong(userIds[i]);
+            intIds[i] = longIntDict.get(id);
+        }
+
+        return intIds;
     }
-
 }
+
+
