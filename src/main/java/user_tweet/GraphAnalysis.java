@@ -1,6 +1,5 @@
-package analysis;
+package user_tweet;
 
-import com.AppConfigs;
 import com.google.common.primitives.Ints;
 import gnu.trove.iterator.TLongIntIterator;
 import gnu.trove.map.TIntLongMap;
@@ -14,9 +13,6 @@ import it.stilo.g.algo.SubGraph;
 import it.stilo.g.structures.DoubleValues;
 import it.stilo.g.structures.LongIntDict;
 import it.stilo.g.structures.WeightedDirectedGraph;
-import structure.MappedWeightedGraph;
-import user_tweet.FileUtility;
-import utils.GraphUtility;
 
 public abstract class GraphAnalysis {
 

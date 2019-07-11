@@ -1,7 +1,5 @@
 package user_tweet;
 
-import analysis.GraphAnalysis;
-import com.AppConfigs;
 import it.stilo.g.structures.LongIntDict;
 import it.stilo.g.structures.WeightedDirectedGraph;
 import it.stilo.g.util.GraphReader;
@@ -17,7 +15,6 @@ import java.util.ArrayList;
 import org.apache.lucene.queryparser.classic.QueryParser;
 import org.apache.lucene.search.*;
 import org.apache.lucene.util.Version;
-import structure.MappedWeightedGraph;
 import twitter4j.JSONException;
 import java.util.HashMap;
 import java.util.List;

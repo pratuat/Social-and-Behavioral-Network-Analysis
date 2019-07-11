@@ -1,10 +1,9 @@
-package utils;
+package user_tweet;
 
 import gnu.trove.map.TIntLongMap;
 import it.stilo.g.structures.LongIntDict;
 import it.stilo.g.structures.WeightedDirectedGraph;
 import it.stilo.g.structures.WeightedGraph;
-import it.stilo.g.structures.WeightedUndirectedGraph;
 import java.io.BufferedWriter;
 import java.io.FileOutputStream;
 import java.io.IOException;

@@ -1,4 +1,4 @@
-package com;
+package user_tweet;
 
 public class AppConfigs {
     public static final String PROJECT_DIR = "/Users/pratuat/course_materials/sbn/sbn_project/";

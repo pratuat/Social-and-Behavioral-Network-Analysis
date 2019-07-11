@@ -1,4 +1,4 @@
-package structure;
+package user_tweet;
 
 import gnu.trove.map.TIntLongMap;
 import it.stilo.g.structures.WeightedDirectedGraph;

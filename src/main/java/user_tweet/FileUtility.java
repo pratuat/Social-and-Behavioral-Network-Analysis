@@ -1,6 +1,5 @@
 package user_tweet;
 
-import com.AppConfigs;
 import com.opencsv.CSVReader;
 
 import java.io.*;
