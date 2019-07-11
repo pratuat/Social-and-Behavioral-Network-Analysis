@@ -27,7 +27,7 @@ import utils.plot;
 import static algo.saxAnalysis.countTweetTerm;
 import static algo.saxAnalysis.extractDateRange;
 
-public class pipeline {
+public class TemporalAnalysisPipeline {
 
         public static void createTweetIndex(String sourcePath) {
 
@@ -325,8 +325,6 @@ public class pipeline {
 //            performCoocurenceAnalysis(clusterLocationNo, caKcoreNo,caLCCNo, k);
 //            performCoocurenceAnalysis(clusterLocationYes, caKcoreYesm, caLCCYes, k);
             plotTSComparaison(indexTweets,caLCCNo,clusterLocationNo,grain3,"LCCNO");
-
-
 
 
         }

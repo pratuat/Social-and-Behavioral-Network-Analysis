@@ -1,4 +1,4 @@
-package user_tweet;
+package pipeline;
 
 import it.stilo.g.structures.LongIntDict;
 import it.stilo.g.structures.WeightedDirectedGraph;
@@ -23,14 +23,14 @@ import java.util.List;
 import java.util.stream.Collectors;
 import static utils.IndexUtility.*;
 
-public class UserAnalysis {
+public class UserAnalysisPipeline {
 
     public static IndexSearcher allTweetIndexSearcher;
     public static IndexSearcher userTweetIndexSearcher;
     public static IndexSearcher userPoliticianIndexSearcher;
     public static HashMap<Long, String> userIntIdScreenNameHashMap= new HashMap<>();
 
-    public static void main(String[] args)  throws IOException, JSONException, ParseException, Exception {
+    public static void runUserAnalysisPipeline()  throws IOException, JSONException, ParseException, Exception {
 
         buildUserTweetIndex();
         buildUserPoliticianIndex();

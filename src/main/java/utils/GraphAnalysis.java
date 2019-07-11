@@ -3,7 +3,6 @@ package utils;
 import com.google.common.primitives.Ints;
 import gnu.trove.iterator.TLongIntIterator;
 import gnu.trove.map.TIntLongMap;
-import index.IndexSearcher;
 import it.stilo.g.algo.ConnectedComponents;
 import it.stilo.g.algo.HubnessAuthority;
 import it.stilo.g.algo.KppNeg;
@@ -17,16 +16,6 @@ import it.stilo.g.structures.WeightedDirectedGraph;
 public abstract class GraphAnalysis {
 
     public static int runner = (int) (Runtime.getRuntime().availableProcessors());
-
-    static IndexSearcher searcher;
-
-    static {
-        try {
-            searcher = new IndexSearcher(AppConfigs.ALL_TWEET_INDEX);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
 
     private static Set<Integer> getMaxSet(Set<Set<Integer>> comps) {
         int m = 0;
