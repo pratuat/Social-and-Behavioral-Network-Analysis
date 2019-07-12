@@ -77,7 +77,7 @@ public class indexTweets extends buildIndex {
     @Override
     public void params(String dirName) throws IOException {
         this.dir = new SimpleFSDirectory(new File(dirName));
-        analyzers= new HashMap<String, Analyzer>();
+        analyzers = new HashMap<String, Analyzer>();
         analyzers.put("tweetText", new ItalianAnalyzer(LUCENE_41));
         //analyzers.put("hashtags", new ItalianAnalyzer(LUCENE_41));
         pfaWrapper = new PerFieldAnalyzerWrapper(new WhitespaceAnalyzer(LUCENE_41), analyzers);
@@ -175,7 +175,8 @@ public class indexTweets extends buildIndex {
 
     /**
      * A list of detailed tweet corresponding to the searched items
-     * @param name field to be searched in
+     *
+     * @param name  field to be searched in
      * @param value term to be seached
      * @param range number of returned resul
      * @return a list of  tweets matching our search parameters
@@ -207,6 +208,7 @@ public class indexTweets extends buildIndex {
 
     /**
      * A method that search the occurence of two terms in the same tweet
+     *
      * @param term1 Term to count and compare
      * @param term2 Term to count and compare
      * @param field Target field to look in
@@ -228,8 +230,8 @@ public class indexTweets extends buildIndex {
 //          //  t1 = parser.parse(term1);
 //            //t2 = parser.parse(term2);
 //        } else {
-            t1 = new TermQuery(new Term(field, term1));
-            t2 = new TermQuery(new Term(field, term2));
+        t1 = new TermQuery(new Term(field, term1));
+        t2 = new TermQuery(new Term(field, term2));
         //}
 
 
@@ -246,7 +248,8 @@ public class indexTweets extends buildIndex {
 
     /**
      * Method to check the occurence of a particular word within the index
-     * @param term the word to be searched
+     *
+     * @param term  the word to be searched
      * @param field the particular field of interest within the index
      * @return an integer corresponding to the count of tweets containing the term
      * @throws IOException
@@ -272,6 +275,7 @@ public class indexTweets extends buildIndex {
 
     /**
      * Removes not needed text within a string
+     *
      * @param text
      * @return the text without not relevant text (links, rt, hashtags etx)
      */
@@ -285,32 +289,6 @@ public class indexTweets extends buildIndex {
         formatedText = formatedText.replaceAll("\\d+\\S*", " ");
 
         return formatedText;
-    }
-
-    public static void main(String[] args) throws Exception,UnsupportedOperationException, IOException{
-
-//        String indexLocation = "./index/indexTweets";
-//        Directory dir = new SimpleFSDirectory(new File(indexLocation));
-//        DirectoryReader ir = DirectoryReader.open(dir);
-//        //IndexSearcher searcher = new IndexSearcher(ir);
-//        Fields fields = MultiFields.getFields(ir);
-//        Terms terms = fields.terms("screenName");
-//        TermsEnum iterator = terms.iterator(null);
-//        BytesRef byteRef;
-//        System.out.println(terms);
-//
-//        int count = 0;
-//        while ((byteRef = iterator.next()) != null) {
-//            //System.out.println(new String(byteRef.bytes, byteRef.offset, byteRef.length));
-//            count++;
-//        }
-//       System.out.println(count);
-        String sourceTweets = "./src/util/data/stream";
-        String sourcePoliticians = "./src/util/list_politician.csv";
-        String indexTweets = "./index/indexTweets";
-        indexTweets in = new indexTweets(sourceTweets, indexTweets);
-        //System.out.println(in.search("userID", "2402701895",1000));
-        System.out.println(in.termFrequency("fondi", "tweetText"));
     }
 
 }

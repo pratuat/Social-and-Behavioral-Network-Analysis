@@ -82,8 +82,8 @@ public class kmeans {
                 if (this.clusters.containsKey(terms[i])) {
                     int previousCluster = this.clusters.get(terms[i]);
                     // and the previous cluster is different than the new one
-                    // move the term into a new cluster
-                    if (previousCluster != updatedCluster && count>10) {
+                    // move the term into a new cluster mk
+                    if (previousCluster != updatedCluster) {
                         this.clusters.put(terms[i], updatedCluster);
                     }
                 }
@@ -128,7 +128,6 @@ public class kmeans {
         // extract all the clusters
         for (int c = 0; c<k ; c++) {
             int cc = c;
-            //System.out.println(cc);
             Map<String,Integer> currentCluster = filterByValue(this.clusters, value -> value == cc);
              System.out.println(currentCluster);
 
@@ -186,38 +185,38 @@ public class kmeans {
     }
 
 
-    public static void main(String[] args) throws UnsupportedOperationException{
-        try{
-        HashMap<String, String> hash_map = new HashMap<>();
-
-        hash_map.put("fare", "aaabaaaaabbbbabaaaaaa");
-        hash_map.put("ultim", "abababaaabbbbaaaaaaaa");
-        hash_map.put("casa", "aaaaaaaaaaaabaaaaaaaa");
-        hash_map.put("govern", "baabaaaabbabaaaababaa");
-        hash_map.put("nuovo", "baabaababbbbbbaababaa");
-        System.out.println( hash_map);
-
-        //String s = "admin";
-        byte[] bytes = hash_map.get("fare").getBytes("US-ASCII");
-        System.out.println(bytes);
-        System.out.println(bytes[3]);
-        String[] keys = hash_map.keySet().toArray(new String[hash_map.keySet().size()]);
-        System.out.println(keys[0]);
-         double dis=   StringUtils.getLevenshteinDistance(hash_map.get("fare"), hash_map.get("fare"));
-         System.out.println(dis);
-
-
-
-         kmeans s  = new kmeans(hash_map,2);
-        // System.out.println();
-         s.fit();
-         System.out.println(s.clusters);
-
-
-
-        }
-    catch (Exception e){
-
-        }
-    }
+//    public static void main(String[] args) throws UnsupportedOperationException{
+//        try{
+//        HashMap<String, String> hash_map = new HashMap<>();
+//
+//        hash_map.put("fare", "aaabaaaaabbbbabaaaaaa");
+//        hash_map.put("ultim", "abababaaabbbbaaaaaaaa");
+//        hash_map.put("casa", "aaaaaaaaaaaabaaaaaaaa");
+//        hash_map.put("govern", "baabaaaabbabaaaababaa");
+//        hash_map.put("nuovo", "baabaababbbbbbaababaa");
+//        System.out.println( hash_map);
+//
+//        //String s = "admin";
+//        byte[] bytes = hash_map.get("fare").getBytes("US-ASCII");
+//        System.out.println(bytes);
+//        System.out.println(bytes[3]);
+//        String[] keys = hash_map.keySet().toArray(new String[hash_map.keySet().size()]);
+//        System.out.println(keys[0]);
+//         double dis=   StringUtils.getLevenshteinDistance(hash_map.get("fare"), hash_map.get("fare"));
+//         System.out.println(dis);
+//
+//
+//
+//         kmeans s  = new kmeans(hash_map,2);
+//        // System.out.println();
+//         s.fit();
+//         System.out.println(s.clusters);
+//
+//
+//
+//        }
+//    catch (Exception e){
+//
+//        }
+//    }
 }

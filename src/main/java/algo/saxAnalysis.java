@@ -400,7 +400,7 @@ public class saxAnalysis {
         pw.close();
     }
 
-    public static void main(String[] args) throws IOException, Exception{
+//    public static void main(String[] args) throws IOException, Exception{
 //        String sourceTweets = "./src/util/data/stream";
 //        String sourcePoliticians = "./src/util/list_politician.csv";
           String indexLocation = "./index/indexNo";
@@ -442,7 +442,7 @@ public class saxAnalysis {
 //        p_yesno2.setVisible(true);
 
 
-        String clusterLocation = "./noClusters/No_";
+//        String clusterLocation = "./noClusters/No_";
         //saveAllClusters(3, clusterLocation,res,saxRep);
         //final int v = 0;
         //Object[] r = kmeans.filterByValue(res,value -> value == v).keySet().toArray();
@@ -450,13 +450,13 @@ public class saxAnalysis {
 
        // String test = "0000t";
         //System.out.println(test + 1);
-        long[] date = extractDateRange(indexLocation);
-        System.out.println(date[0]);
-        System.out.println(date[1]);
-        countTweetTerm(indexLocation,"fondi", date[0], date[1], 10800000L);
+//        long[] date = extractDateRange(indexLocation);
+//        System.out.println(date[0]);
+//        System.out.println(date[1]);
+//        countTweetTerm(indexLocation,"fondi", date[0], date[1], 10800000L);
 
 //        fondi
 //                renzi
 //        sostegn
-    }
+    //}
 }

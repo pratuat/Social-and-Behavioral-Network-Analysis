@@ -12,6 +12,7 @@ import java.util.*;
 import index.indexTweets;
 //import jdk.internal.org.objectweb.asm.util.Printer;
 import org.apache.lucene.queryparser.classic.ParseException;
+import utils.AppConfigs;
 //import sun.security.pkcs.ParsingException;
 
 public class cooccurrence {
@@ -79,35 +80,29 @@ public class cooccurrence {
      * @throws ParseException
      */
     public WeightedUndirectedGraph createGraph(ArrayList<String> clusterTerms) throws IOException, ParseException {
-        String indexLocation = "./index/indexTweets";
+        String indexLocation = AppConfigs.USER_TWEET_INDEX;
         String sourceTweets = "./src/util/data/stream";
         WeightedUndirectedGraph graph = new WeightedUndirectedGraph(clusterTerms.size());
         indexTweets index = new indexTweets(sourceTweets, indexLocation);
         double p = 0.1;
-        for (int t1 = 0; t1 < clusterTerms.size(); t1++) {
-            System.out.println(t1 + " out of "+ clusterTerms.size());
-            for (int t2 = t1 + 1; t2 < clusterTerms.size(); t2++) {
-                String term1 = clusterTerms.get(t1).split(" ", 2)[0];
-                String term2 = clusterTerms.get(t2).split(" ", 2)[0];
-                //System.out.println(term1 + " " + term2);
+        for (int i = 0; i < clusterTerms.size(); i++) {
+            System.out.println(i + " out of "+ clusterTerms.size());
+            for (int j = i + 1; j < clusterTerms.size(); j++) {
+                String term1 = clusterTerms.get(i).split(" ", 2)[0];
+                String term2 = clusterTerms.get(j).split(" ", 2)[0];
                 int weight = index.search(term1,term2, "tweetText");
-                //System.out.println(weight);
-                //int weight = taNO.queries(term1, term2, "text", false);
-                // threshold
-                int t1TF = index.termFrequency(term1,"tweetText");
-                int t2TF = index.termFrequency(term2,"tweetText");
+                int termFrequencyi = index.termFrequency(term1,"tweetText");
+                int termFrequencyj = index.termFrequency(term2,"tweetText");
                 int flag;
-                if (t1TF < t2TF) {
-                    flag = t1TF;
+                if (termFrequencyi < termFrequencyj) {
+                    flag = termFrequencyi;
                 } else {
-                    flag = t2TF;
+                    flag = termFrequencyj;
                 }
                 double threshold = flag * p;
-                //System.out.println(minFreq+" - t: "+t);
 
                 if (weight > threshold) {
-                    //graph.add(t1, t2, weight);
-                    graph.add(t1, t2, 1);
+                    graph.add(i, j, 1);
                 }
                 //System.out.println(term1+" "+term2+": "+taYES.queries(term1,term2));
             }
@@ -116,8 +111,6 @@ public class cooccurrence {
         AtomicDouble[] info = GraphInfo.getGraphInfo(graph, 1);
         System.out.println("Nodes:" + info[0]);
         System.out.println("Edges:" + info[1]);
-        System.out.println("Density:" + info[2]);
-
         return graph;
     }
 
@@ -190,102 +183,47 @@ public class cooccurrence {
     public static void saveGraphToFile(WeightedUndirectedGraph graph, String saveLocation) throws IOException {
         GraphWriter w = new GraphWriter(graph, saveLocation);
         w.save();
+
     }
 
 
-//    public WeightedUndirectedGraph extractClusterGraph(Map<String, String> clusters){
+//    public static void main(String[] args) throws UnsupportedOperationException, IOException, org.apache.lucene.queryparser.classic.ParseException, InterruptedException{
+//        //WeightedUndirectedGraph g = new UnionDisjoint();
+//        String locationYes = "./yesClusters/yes_";
+//        String locationNo = "./noClusters/no_";
+//        String co_lcc = "./cooc/lcc/no/lcc_";
+//        String co_kcore = "./cooc/kcore/no/kcore_";
+//        String sourceTweets = "./src/util/data/stream";
 //
-//    }
+//        cooccurrence c = new cooccurrence(20, locationNo);
 //
-//    public static void extractKCoreAndConnectedComponent(double threshold) throws IOException, ParseException, Exception {
+//        Map<Integer, ArrayList>clusters = c.getClusterTerms(20);
+//        System.out.println(clusters);
+//       // indexTweets ind = new indexTweets(sourceTweets, locationYes);
+//        //System.out.println(ind.search("fare", "cosa", "tweetText", false));
+//        for (int i = 0; i<20; i++){
+//            try{
 //
-//        // do the same analysis for the yes-group and no-group
-//        String[] prefixYesNo = {"yes", "no"};
-//        for (String prefix : prefixYesNo) {
+//            System.out.println("Working with clusters #"+i);
+//            System.out.println("Creating graph for cluster #"+i+" ...");
 //
-//            // Get the number of clusters
-//            int c = getNumberClusters(RESOURCES_LOCATION + prefix + "_graph.txt");
-//
-//            // Get the number of nodes inside each cluster
-//            List<Integer> numberNodes = getNumberNodes(RESOURCES_LOCATION + prefix + "_graph.txt", c);
-//
-//            PrintWriter pw_cc = new PrintWriter(new FileWriter(RESOURCES_LOCATION + prefix + "_largestcc.txt")); //open the file where the largest connected component will be written to
-//            PrintWriter pw_kcore = new PrintWriter(new FileWriter(RESOURCES_LOCATION + prefix + "_kcore.txt")); //open the file where the kcore will be written to
-//
-//            // create the array of graphs
-//            WeightedUndirectedGraph[] gArray = new WeightedUndirectedGraph[c];
-//            for (int i = 0; i < c; i++) {
-//                System.out.println();
-//                System.out.println("Cluster " + i);
-//
-//                gArray[i] = new WeightedUndirectedGraph(numberNodes.get(i) + 1);
-//
-//                // Put the nodes,
-//                NodesMapper<String> mapper = new NodesMapper<String>();
-//                gArray[i] = addNodesGraph(gArray[i], i, RESOURCES_LOCATION + prefix + "_graph.txt", mapper);
-//
-//                //normalize the weights
-//                gArray[i] = normalizeGraph(gArray[i]);
-//
-//                AtomicDouble[] info = GraphInfo.getGraphInfo(gArray[i], 1);
-//                System.out.println("Nodes:" + info[0]);
-//                System.out.println("Edges:" + info[1]);
-//                System.out.println("Density:" + info[2]);
-//
-//                // extract remove the edges with w<t
-//                gArray[i] = SubGraphByEdgesWeight.extract(gArray[i], threshold, 1);
-//
-//                // get the largest CC and save to a file
-//                WeightedUndirectedGraph largestCC = getLargestCC(gArray[i]);
-//                saveGraphToFile(pw_cc, mapper, largestCC.in, i);
-//
-//                // Get the inner core and save to a file
-//                WeightedUndirectedGraph kcore = kcore(gArray[i]);
-//                saveGraphToFile(pw_kcore, mapper, kcore.in, i);
+//            WeightedUndirectedGraph graph = c.createGraph(clusters.get(i));
+//            System.out.println("Extracting largest connected component for clusters #"+i);
+//            WeightedUndirectedGraph largestCC= c.getLargestConnectedComponent(graph,8);
+//            // saveLCC = new PrintWriter(new FileWriter(co_lcc+i+".txt"));
+//            saveGraphToFile(largestCC, co_lcc+i+".txt");
+//            //saveLCC.close();
+//            System.out.println("Extracting K-cores component for clusters #"+i);
+//            WeightedUndirectedGraph kcores= c.extractKCores(graph,8);
+//            //PrintWriter saveKcores = new PrintWriter((new FileWriter(co_kcore+i+".txt")));
+//            saveGraphToFile(kcores,co_kcore+i+".txt" );
+//            //saveKcores.close();
+//            //c.getLargestConnectedComponent(graph,2);
 //            }
-//
-//            pw_cc.close();
-//            pw_kcore.close();
+//            catch(Exception e){
+//                continue;
+//            }
 //        }
-//    }
-
-    public static void main(String[] args) throws UnsupportedOperationException, IOException, org.apache.lucene.queryparser.classic.ParseException, InterruptedException{
-        //WeightedUndirectedGraph g = new UnionDisjoint();
-        String locationYes = "./yesClusters/yes_";
-        String locationNo = "./noClusters/no_";
-        String co_lcc = "./cooc/lcc/no/lcc_";
-        String co_kcore = "./cooc/kcore/no/kcore_";
-        String sourceTweets = "./src/util/data/stream";
-
-        cooccurrence c = new cooccurrence(20, locationNo);
-
-        Map<Integer, ArrayList>clusters = c.getClusterTerms(20);
-        System.out.println(clusters);
-       // indexTweets ind = new indexTweets(sourceTweets, locationYes);
-        //System.out.println(ind.search("fare", "cosa", "tweetText", false));
-        for (int i = 0; i<20; i++){
-            try{
-
-            System.out.println("Working with clusters #"+i);
-            System.out.println("Creating graph for cluster #"+i+" ...");
-
-            WeightedUndirectedGraph graph = c.createGraph(clusters.get(i));
-            System.out.println("Extracting largest connected component for clusters #"+i);
-            WeightedUndirectedGraph largestCC= c.getLargestConnectedComponent(graph,2);
-            // saveLCC = new PrintWriter(new FileWriter(co_lcc+i+".txt"));
-            saveGraphToFile(largestCC, co_lcc+i+".txt");
-            //saveLCC.close();
-            System.out.println("Extracting K-cores component for clusters #"+i);
-            WeightedUndirectedGraph kcores= c.extractKCores(graph,2);
-            //PrintWriter saveKcores = new PrintWriter((new FileWriter(co_kcore+i+".txt")));
-            saveGraphToFile(kcores,co_kcore+i+".txt" );
-            //saveKcores.close();
-            //c.getLargestConnectedComponent(graph,2);
-            }
-            catch(Exception e){
-                continue;
-            }
-        }
 
 //        ArrayList<String> arList = new ArrayList<String>();
 //        arList.addAll(Arrays.asList("fare", "de", "ultim", "casa", "govern", "nuovo", "via", "stato", "piazz", "cosa", "sindac", "mondo", "roma", "ecco", "passo", "ital"));
@@ -298,5 +236,5 @@ public class cooccurrence {
 //        GraphWriter w = new GraphWriter(graphTest, "test.txt");
 //        w.save();
 //
-    }
+    //}
 }

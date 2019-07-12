@@ -20,6 +20,8 @@ public class AppConfigs {
 
     //... OUTPUT DATA FILES ...//
 
+
+
     public static final String ALL_USER = RESOURCES_DIR + "all_users.csv";
 
     public static final String USER_TWEET_COUNT = RESOURCES_DIR + "user_tweet_count.csv";
@@ -35,6 +37,23 @@ public class AppConfigs {
     public static final String YES_USERS_500KPP = RESOURCES_DIR + "top_authorities/yes_users_500KPP.csv";
 
     public static final String NO_USERS_500KPP = RESOURCES_DIR + "top_authorities/no_users_500KPP.csv";
+
+    public static final String CLUSTER_LOCATION_YES = RESOURCES_DIR + "yesClusters/yes_";
+
+    public static final String CLUSTER_LOCATION_NO = RESOURCES_DIR + "noClusters/no_";
+
+    public static final String CA_KCORE_YES = RESOURCES_DIR + "cooc/kcore/yes/KCORE_YES_";
+
+    public static final String CA_KCORE_NO = RESOURCES_DIR + "cooc/kcore/no/KCORE_NO_";
+
+    public static final String CA_LCC_YES = RESOURCES_DIR + "cooc/lcc/yes/LCC_YES_";
+
+    public static final String CA_LCC_NO = RESOURCES_DIR + "cooc/lcc/no/LCC_NO_";
+
+
+
+
+
 
     //... INDEXES ...//
 
