@@ -68,7 +68,6 @@ public class AppConfigs {
 
     public static final String K_NO = NO_USERS_500KPP;
 
-
     //... INDEXES ...//
 
     public static final String ALL_TWEET_INDEX = DATA_DIR + "indexes/all_tweet/";
