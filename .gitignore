@@ -1,5 +1,6 @@
 /.idea/
 2.iml
-/data/
+/data/indexes/
+/data/input/Official_SBN-ITA-2016-Net.gz
 target/
 .ipynb_checkpoints/

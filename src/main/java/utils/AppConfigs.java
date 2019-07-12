@@ -54,7 +54,7 @@ public class AppConfigs {
     public static final String YES_LABELS_TEMPORAL_COUNTER = SPREAD_OF_INFLUENCE + "yes_labels_temporal_counter_K-Players_.csv";
 
 
-    public static final String SUBGRAPH_S_OF_M = USER_GRAPH_LCC_PATH;
+    public static final String SUB_GRAPH_S_OF_M = RESOURCES_DIR + "Sub_graph_S_of_M.gz";
 
     public static final String M_YES = RESOURCES_DIR + "top_authorities/M_yes.csv";
 

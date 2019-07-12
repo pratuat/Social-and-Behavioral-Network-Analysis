@@ -74,6 +74,9 @@ public abstract class GraphAnalysis {
         System.out.println("Extracting the subgraph induced by M");
         g = SubGraph.extract(g, usersIDs, runner);
 
+        if (saveToFile)
+            GraphUtility.saveDirectGraph2Mappings(g, AppConfigs.SUB_GRAPH_S_OF_M, mapLong2Int.getInverted());
+
         // The SubGraph.extract() creates a graph of the same size as the old graph
         // and it raises an exception due to insufficient memory.
         // We had to resize the graph.
@@ -98,8 +101,7 @@ public abstract class GraphAnalysis {
         System.out.println("Saving the graph");
         TIntLongMap revDictResize = dictResize.getInverted();
 
-        if (saveToFile)
-            GraphUtility.saveDirectGraph2Mappings(g, AppConfigs.USER_GRAPH_LCC_PATH, revDictResize, mapLong2Int.getInverted());
+
 
         return new MappedWeightedGraph(g, revDictResize);
     }

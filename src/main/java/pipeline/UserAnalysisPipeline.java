@@ -36,8 +36,7 @@ public class UserAnalysisPipeline {
         buildUserPoliticianIndex();
         buildYesNoUserPoliticianIndex();
         generateUserPoliticianMap();
-        List[] topUsers = shortListUsers();
-        generateUserInducedSubGraphs(topUsers);
+        generateUserInducedSubGraphs();
 
     }
 
@@ -48,10 +47,11 @@ public class UserAnalysisPipeline {
      * @throws IOException
      * @throws InterruptedException
      */
-    public static void generateUserInducedSubGraphs(List[] topUsers) throws IOException, InterruptedException {
+    public static void generateUserInducedSubGraphs() throws IOException, InterruptedException {
         System.out.println("=====================================");
         System.out.println("Generating user induced subgraph ...");
 
+        List[] topUsers = shortListUsers();
         List<String> topUsersByTweetCount = topUsers[0];
         List<String> topYesUsersByTweetCount = topUsers[1];
         List<String> topNoUsersByTweetCount = topUsers[2];
@@ -134,9 +134,13 @@ public class UserAnalysisPipeline {
         System.out.println("Computing no user authorities completed ...");
 
         System.out.println("----------------------------------");
+
         System.out.println("Computing KPP-NEG");
+
         GraphAnalysis.runKPPNEGAnalysis(graph, mapLong2Int, topYesUsersIds, AppConfigs.YES_USERS_500KPP, userIntIdScreenNameHashMap);
         GraphAnalysis.runKPPNEGAnalysis(graph, mapLong2Int, topNoUsersIds, AppConfigs.NO_USERS_500KPP, userIntIdScreenNameHashMap);
+
+        System.out.println("Computing KPP-NEG completed ...");
     }
 
     // ... CREATE USER TWEET COUNT (ALL , YES/NO POLITICIANS) LIST ... //
