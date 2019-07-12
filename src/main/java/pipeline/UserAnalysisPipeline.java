@@ -135,8 +135,8 @@ public class UserAnalysisPipeline {
 
         System.out.println("----------------------------------");
         System.out.println("Computing KPP-NEG");
-        GraphAnalysis.identifyTopKPlayers(graph, mapLong2Int, topYesUsersIds, AppConfigs.YES_USERS_500KPP, userIntIdScreenNameHashMap);
-        GraphAnalysis.identifyTopKPlayers(graph, mapLong2Int, topNoUsersIds, AppConfigs.NO_USERS_500KPP, userIntIdScreenNameHashMap);
+        GraphAnalysis.runKPPNEGAnalysis(graph, mapLong2Int, topYesUsersIds, AppConfigs.YES_USERS_500KPP, userIntIdScreenNameHashMap);
+        GraphAnalysis.runKPPNEGAnalysis(graph, mapLong2Int, topNoUsersIds, AppConfigs.NO_USERS_500KPP, userIntIdScreenNameHashMap);
     }
 
     // ... CREATE USER TWEET COUNT (ALL , YES/NO POLITICIANS) LIST ... //

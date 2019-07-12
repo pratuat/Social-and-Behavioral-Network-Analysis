@@ -23,6 +23,8 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.NumericUtils;
 import twitter4j.TwitterException;
 import java.util.HashMap;
+
+import utils.AppConfigs;
 import utils.csv;
 import utils.twitter;
 
@@ -34,8 +36,8 @@ public class politicianIndex extends buildIndex {
     private StringField vote;
     private StringField party;
     private StringField screenName;
-    private String indexLocation = "./index/indexPoliticians";
-    private IndexReader ir;
+    private static String indexLocation = AppConfigs.ALL_TWEET_INDEX;
+    private static IndexReader ir;
 
     public politicianIndex(String stream, String index) {
         // Initialize the document
@@ -100,7 +102,7 @@ public class politicianIndex extends buildIndex {
         throw new UnsupportedOperationException("Not needed here");
     }
 
-    public ArrayList<Document> search(String name, String value, int range) {
+    public static ArrayList<Document> search(String name, String value, int range) {
         try {
             // keep the results of the query
             ArrayList<Document> results = new ArrayList<>();
