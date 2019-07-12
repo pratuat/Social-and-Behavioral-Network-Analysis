@@ -4,6 +4,7 @@ import org.apache.lucene.document.TextField;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.file.DirectoryStream;
@@ -12,6 +13,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.zip.GZIPInputStream;
 import org.apache.lucene.analysis.Analyzer;
@@ -26,6 +28,10 @@ import org.apache.lucene.index.*;
 import org.apache.lucene.search.*;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.SimpleFSDirectory;
+
+import io.TxtUtils;
+
+import static io.TxtUtils.txtToList;
 import static org.apache.lucene.util.Version.LUCENE_41;
 import org.apache.lucene.util.BytesRef;
 import twitter4j.HashtagEntity;
@@ -183,7 +189,7 @@ public class indexTweets extends buildIndex {
      */
     public ArrayList<Document> search(String name, String value, int range) {
         try {
-            String indexLocation = "./index/indexTweets";
+            String indexLocation = "./src/resources/index/indexTweets";
             Directory dir = new SimpleFSDirectory(new File(indexLocation));
             DirectoryReader ir = DirectoryReader.open(dir);
             IndexSearcher searcher = new IndexSearcher(ir);
@@ -204,6 +210,27 @@ public class indexTweets extends buildIndex {
 
             return null;
         }
+    }
+    
+    public static void fromScreenNameToUserId(String inputFile_ScreenNames, String outputFile_UserIds) throws FileNotFoundException, IOException, org.apache.lucene.queryparser.classic.ParseException {
+        // List that will contain the twitter IDs
+        ArrayList<String> twitterIDs = new ArrayList<String>();
+
+        // Load the file containing screenNames into a list
+        List<String> usersList = txtToList(inputFile_ScreenNames);
+        int i = 0;
+        for (String screenName : usersList) {
+        	// retrieve the TwitterIDs from the tweets index
+            ArrayList<Document> docs = search("screenName", screenName, 1);
+            if (docs.isEmpty() != true) {
+            	// Get the userId from the first resulting doc
+                String userId = docs.get(0).get("userId");
+                // Add it to the output list
+                twitterIDs.add(userId);
+            }
+            i++;
+        }
+        TxtUtils.iterableToTxt(outputFile_UserIds, twitterIDs);
     }
 
     /**

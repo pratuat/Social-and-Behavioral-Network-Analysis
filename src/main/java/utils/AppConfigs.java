@@ -8,6 +8,9 @@ public class AppConfigs {
 
     public static final String RESOURCES_DIR = DATA_DIR + "resources/";
 
+    public static final String SPREAD_OF_INFLUENCE = RESOURCES_DIR + "spread_of_influence/modified_lpa/";
+
+
     //... RESOURCE FILES ...//
 
     public static final String USER_GRAPH_PATH = DATA_DIR + "input/Official_SBN-ITA-2016-Net.gz";
@@ -47,6 +50,23 @@ public class AppConfigs {
     public static final String CA_LCC_YES = RESOURCES_DIR + "cooc/lcc/yes/LCC_YES_";
 
     public static final String CA_LCC_NO = RESOURCES_DIR + "cooc/lcc/no/LCC_NO_";
+
+    public static final String YES_LABELS_TEMPORAL_COUNTER = SPREAD_OF_INFLUENCE + "yes_labels_temporal_counter_K-Players_.csv";
+
+
+    public static final String SUBGRAPH_S_OF_M = USER_GRAPH_LCC_PATH;
+
+    public static final String M_YES = RESOURCES_DIR + "top_authorities/M_yes.csv";
+
+    public static final String M_NO = RESOURCES_DIR + "top_authorities/M_no.csv";
+
+    public static final String MP_YES = YES_USERS_TOP_AUTHORITIES + "_authorities.csv";
+
+    public static final String MP_NO = NO_USERS_TOP_AUTHORITIES + "_authorities.csv";
+
+    public static final String K_YES = YES_USERS_500KPP;
+
+    public static final String K_NO = NO_USERS_500KPP;
 
 
     //... INDEXES ...//

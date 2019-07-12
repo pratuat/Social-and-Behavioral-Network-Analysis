@@ -135,8 +135,8 @@ public class UserAnalysisPipeline {
 
         System.out.println("----------------------------------");
         System.out.println("Computing KPP-NEG");
-        GraphAnalysis.identifyTopKPlayers(graph, mapLong2Int, topYesUsersIds, AppConfigs.YES_USERS_500KPP, userIntIdScreenNameHashMap);
-        GraphAnalysis.identifyTopKPlayers(graph, mapLong2Int, topNoUsersIds, AppConfigs.NO_USERS_500KPP, userIntIdScreenNameHashMap);
+        GraphAnalysis.runKPPNEGAnalysis(graph, mapLong2Int, topYesUsersIds, AppConfigs.YES_USERS_500KPP, userIntIdScreenNameHashMap);
+        GraphAnalysis.runKPPNEGAnalysis(graph, mapLong2Int, topNoUsersIds, AppConfigs.NO_USERS_500KPP, userIntIdScreenNameHashMap);
     }
 
     // ... CREATE USER TWEET COUNT (ALL , YES/NO POLITICIANS) LIST ... //
@@ -152,7 +152,7 @@ public class UserAnalysisPipeline {
 
         int yesTopDocs;
         int noTopDocs;
-        String userOpinion;
+
         Query query;
         StandardAnalyzer analyzer;
         QueryParser queryParser;
@@ -171,8 +171,11 @@ public class UserAnalysisPipeline {
         queryParser = new QueryParser(Version.LUCENE_41, "", analyzer);
 
         List<String> userTweetCount = new ArrayList<>();
+        List<String> yesUserTweetCount = new ArrayList<>();
+        List<String> noUserTweetCount = new ArrayList<>();
 
         int len = allUserScreenNames.length;
+        String row;
 
         for (int i=0; i < len; i++) {
 
@@ -186,18 +189,21 @@ public class UserAnalysisPipeline {
             yesTopDocs = userYesPoliticianIndexSearcher.search(query, Integer.MAX_VALUE).scoreDocs.length;
             noTopDocs = userNoPoliticianIndexSearcher.search(query, Integer.MAX_VALUE).scoreDocs.length;
 
-            if (yesTopDocs > noTopDocs)
-                userOpinion = "yes";
-            else if (yesTopDocs < noTopDocs)
-                userOpinion = "no";
-            else
-                userOpinion = "neutral";
-
-            userTweetCount.add(id + ", " + screenName + ", " + (yesTopDocs + noTopDocs) + ", " + yesTopDocs + ", " + noTopDocs  + ", "  + userOpinion);
-
+            if (yesTopDocs > noTopDocs) {
+                row = id + ", " + screenName + ", " + (yesTopDocs + noTopDocs) + ", " + yesTopDocs + ", " + noTopDocs + ", yes";
+                yesUserTweetCount.add(row);
+                userTweetCount.add(row);
+            }
+            else if (yesTopDocs < noTopDocs) {
+                row = id + ", " + screenName + ", " + (yesTopDocs + noTopDocs) + ", " + yesTopDocs + ", " + noTopDocs  + ", no";
+                noUserTweetCount.add(row);
+                userTweetCount.add(row);
+            }
         }
 
         FileUtility.writeToFile(AppConfigs.USER_TWEET_COUNT, userTweetCount.toArray());
+        FileUtility.writeToFile(AppConfigs.M_YES, yesUserTweetCount.toArray());
+        FileUtility.writeToFile(AppConfigs.M_NO, noUserTweetCount.toArray());
 
         System.out.println("----------------------------------");
     }
