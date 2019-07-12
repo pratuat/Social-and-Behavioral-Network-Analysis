@@ -23,11 +23,11 @@ import twitter4j.TwitterException;
 
 public abstract class buildIndex {
     // from github guys
-    public static final String STREAM_FILES_LOCATION = "src/main/util/sbdata/stream/";
+    public static final String STREAM_FILES_LOCATION = "src/resources/data/stream/";
     public static final File[] SUB_DIRECTORIES = new File(STREAM_FILES_LOCATION).listFiles((File file) -> file.isDirectory());
 
-    public static final String RESOURCES_DIRECTORY = "src/main/util/";
-    public static final String INDEX_DIRECTORY = "src/main/util/";
+    public static final String RESOURCES_DIRECTORY = "src/resources/";
+    public static final String INDEX_DIRECTORY = "src/resources/";
     public static final String STOPWORDS_FILENAME = "stopwords.txt";
 
 

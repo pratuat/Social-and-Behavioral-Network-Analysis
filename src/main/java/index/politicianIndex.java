@@ -34,8 +34,8 @@ public class politicianIndex extends buildIndex {
     private StringField vote;
     private StringField party;
     private StringField screenName;
-    private String indexLocation = "./index/indexPoliticians";
-    private IndexReader ir;
+    private static String indexLocation = "./src/resources/index/indexPoliticians";
+    private static IndexReader ir;
 
     public politicianIndex(String sourcePath, String indexPath) {
         // Initialize the document
@@ -55,7 +55,8 @@ public class politicianIndex extends buildIndex {
         this.indexPath = indexPath;
     }
 
-    @Override
+    @SuppressWarnings("static-access")
+	@Override
     public void build() throws IOException, TwitterException {
         // Read the utils.csv file
         csv csv = new csv();
@@ -99,7 +100,7 @@ public class politicianIndex extends buildIndex {
         throw new UnsupportedOperationException("Not needed here");
     }
 
-    public ArrayList<Document> search(String name, String value, int range) {
+    public static ArrayList<Document> search(String name, String value, int range) {
         try {
             Directory dir = new SimpleFSDirectory(new File(indexLocation));
             ir = DirectoryReader.open(dir);

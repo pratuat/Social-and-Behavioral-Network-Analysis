@@ -17,10 +17,10 @@ public class pipeline {
         public static void createTweetIndex(String sourcePath) {
 
             System.out.println("Tweets Index Creation!");
-            String indexPath = "index/indexTweets";
+            String indexPath = "./src/resources/index/indexTweets";
             // Initialize a new TweetsIndexBuilder
             indexTweets indexAllTweets = new indexTweets(sourcePath, indexPath);
-            Path dir = Paths.get("index/indexTweets");
+            Path dir = Paths.get("./src/resources/index/indexTweets");
             if (!Files.exists(dir)) {
                 try {
                     // Build the index
@@ -41,10 +41,10 @@ public class pipeline {
         public static void createPoliticianIndex(String sourcePath) {
 
             System.out.println("Politician Index Creation!");
-            String indexPath = "index/indexPoliticians";
-            // Initialize a new TweetsIndexBuilder
+            String indexPath = "./src/resources/index/indexPoliticians";
+            // Initialize a new politicianIndexBuilder
             politicianIndex indexPoliticians = new politicianIndex(sourcePath, indexPath);
-            Path dir = Paths.get("index/indexPoliticians");
+            Path dir = Paths.get("./src/resources/index/indexPoliticians");
             if (!Files.exists(dir)) {
                 try {
                     // Building the the index
@@ -65,10 +65,10 @@ public class pipeline {
         public static void dividePoliticians(String sourcePath) {
 
             System.out.println("Dividing Politicians in Groups Yes/No Index Creation!");
-            String indexPath = "index/indexPoliticians";
+            String indexPath = "./src/resources/index/indexPoliticians";
             // Initialize a new TweetsIndexBuilder
             politicianIndex indexPoliticians = new politicianIndex(sourcePath, indexPath);
-            Path dir = Paths.get("index/indexPoliticians");
+            Path dir = Paths.get("./src/resources/index/indexPoliticians");
             // Divide politicians in YES and NO
             ArrayList<Document> yesPoliticians = indexPoliticians.search("vote", "yes", 10000);
             ArrayList<Document> noPoliticians = indexPoliticians.search("vote", "no", 10000);
@@ -81,11 +81,11 @@ public class pipeline {
             }
 
             // Loading all the tweets
-            String indexYes = "index/indexYes";
+            String indexYes = "./src/resources/index/indexYes";
             indexTweets indexAllTweets = new indexTweets(sourcePath, indexYes);
 
             // If the index of all yes tweets doesn't exist
-            dir = Paths.get("index/indexYes");
+            dir = Paths.get("./src/resources/index/indexYes");
             if (!Files.exists(dir)) {
                 // Create it collecting all the yes ploticians screen name
                 ArrayList<String> yesPoliticiansID = indexPoliticians.filter("vote", "yes", "screenName", 10000);
@@ -99,12 +99,12 @@ public class pipeline {
                 System.out.println(dir.toString() + ": Index already created!");
             }
 
-            String indexNo = "index/indexNo";
+            String indexNo = "./src/resources/index/indexNo";
             indexTweets indexAllTweetsNo = new indexTweets(sourcePath, indexNo);
 
 
             // If the index of all no tweets doesn't exist
-            dir = Paths.get("index/indexNo");
+            dir = Paths.get("./src/resources/index/indexNo");
             if (!Files.exists(dir)) {
                 // Create it collecting all the no ploticians screen name
                 ArrayList<String> noScreenNames = indexPoliticians.filter("vote", "no", "screenName", 10000);
@@ -122,8 +122,8 @@ public class pipeline {
 
 
         public static void main(String[] args){
-            String sourceTweets = "./src/util/data/stream";
-            String sourcePoliticians = "./src/util/list_politician.csv";
+            String sourceTweets = "./src/resources/data/stream";
+            String sourcePoliticians = "./src/resources/list_politician.csv";
             createTweetIndex(sourceTweets);
             createPoliticianIndex(sourcePoliticians);
             dividePoliticians(sourcePoliticians);

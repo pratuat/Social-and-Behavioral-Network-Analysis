@@ -33,7 +33,7 @@ public  class twitter {
     public static final int MINIMUMFOLLOWERS = 5000;
 
     public IndexSearcher is;
-    public String indexLocation = "./index/indexTweets";
+    public String indexLocation = "./src/resources/index/indexTweets";
 
     public twitter() {
 
