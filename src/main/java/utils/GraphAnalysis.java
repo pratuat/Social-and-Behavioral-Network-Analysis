@@ -30,17 +30,17 @@ public abstract class GraphAnalysis {
         return max_set;
     }
 
-    public static void identifyTopKPlayers(WeightedDirectedGraph graph, LongIntDict longIntDict, int[] userIds, String fileName, HashMap<Long, String> userIntIdScreenNameHashMap) throws InterruptedException, IOException {
-        WeightedDirectedGraph subGrpah = SubGraph.extract(graph, userIds, runner);
+    public static void runKPPNEGAnalysis(WeightedDirectedGraph graph, LongIntDict longIntDict, int[] userIds, String fileName, HashMap<Long, String> userIntIdScreenNameHashMap) throws InterruptedException, IOException {
+        WeightedDirectedGraph subGraph = SubGraph.extract(graph, userIds, runner);
         TIntLongMap intLongDict = longIntDict.getInverted();
 
         // FILTER NODES WITH DEGREES LESSER THAN THRESHOLD //
 
-        int threshold = 15;
+        int threshold = 70;
         ArrayList<Integer> subGraphNodes = new ArrayList<>();
 
-        for (int i = 1; i < subGrpah.out.length; i++) {
-            if ((subGrpah.out[i] != null && subGrpah.out[i].length >= threshold) || (subGrpah.in[i] != null && subGrpah.in[i].length >= threshold)) {
+        for (int i = 1; i < subGraph.out.length; i++) {
+            if ((subGraph.out[i] != null && subGraph.out[i].length >= threshold) || (subGraph.in[i] != null && subGraph.in[i].length >= threshold)) {
                 subGraphNodes.add(i);
             }
         }
@@ -48,7 +48,10 @@ public abstract class GraphAnalysis {
         System.out.println(">>> Original user length: " + userIds.length);
         System.out.println(">>> Filtered user length: " + subGraphNodes.toArray().length);
 
-        List<DoubleValues> brokers = KppNeg.searchBroker(subGrpah, subGraphNodes.stream().mapToInt((i) -> i).toArray(), runner);
+        subGraph = SubGraph.extract(subGraph, subGraphNodes.stream().mapToInt(i -> i).toArray(), runner);
+
+        List<DoubleValues> brokers = KppNeg.searchBroker(subGraph, subGraph.getVertex(), runner);
+
         brokers.sort((new HubAuthorityComparator()).reversed());
 
         DoubleValues[] brokersArray = brokers.subList(0, 500).stream().toArray(DoubleValues[]::new);
@@ -60,7 +63,7 @@ public abstract class GraphAnalysis {
         for (DoubleValues broker: brokersArray) {
             brokerId = intLongDict.get(broker.index);
             brokerScreenName = userIntIdScreenNameHashMap.get(brokerId);
-            kpps.add(String.format("%f, %s, %d", brokerId, brokerScreenName, broker.value));
+            kpps.add(brokerId + "," + brokerScreenName + "," + broker.value);
         }
 
         FileUtility.writeToFile(fileName, kpps.toArray());

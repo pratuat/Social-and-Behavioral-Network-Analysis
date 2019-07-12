@@ -20,8 +20,6 @@ public class AppConfigs {
 
     //... OUTPUT DATA FILES ...//
 
-
-
     public static final String ALL_USER = RESOURCES_DIR + "all_users.csv";
 
     public static final String USER_TWEET_COUNT = RESOURCES_DIR + "user_tweet_count.csv";
@@ -49,10 +47,6 @@ public class AppConfigs {
     public static final String CA_LCC_YES = RESOURCES_DIR + "cooc/lcc/yes/LCC_YES_";
 
     public static final String CA_LCC_NO = RESOURCES_DIR + "cooc/lcc/no/LCC_NO_";
-
-
-
-
 
 
     //... INDEXES ...//
