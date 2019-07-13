@@ -16,11 +16,12 @@ import org.apache.lucene.store.SimpleFSDirectory;
 import static org.apache.lucene.util.Version.LUCENE_41;
 import org.apache.lucene.util.Version;
 import twitter4j.TwitterException;
+import utils.AppConfigs;
 
 
 public abstract class buildIndex {
     // Setting up the maoin parameters
-    public static final String stopwordsLocation = "src/util/stopwords.txt";
+    public static final String stopwordsLocation = AppConfigs.STOP_WORDS_LOCATION;
     public Directory dir;
     public Analyzer analyzer;
     public IndexWriterConfig cfg;
@@ -49,14 +50,14 @@ public abstract class buildIndex {
             InputStreamReader inputReader = new InputStreamReader(inputStream);
             BufferedReader br = new BufferedReader(inputReader);
             String line;
-            ArrayList<String> stopwords = new ArrayList();
+            ArrayList<String> stopwords = new ArrayList<String>();
             // read every stopwork until no more
             while ((line = br.readLine()) != null) {
                 stopwords.add(line);
             }
             result.addAll(stopwords);
+            br.close();
             return result;
-
         } catch (IOException ex) {
             System.out.println(ex.getMessage());
             return result;

@@ -37,8 +37,10 @@ import org.apache.lucene.util.BytesRef;
 import twitter4j.HashtagEntity;
 import twitter4j.TwitterException;
 import twitter4j.UserMentionEntity;
+import utils.AppConfigs;
 import utils.StatusWrapper;
 
+@SuppressWarnings("unused")
 public class indexTweets extends buildIndex {
     // Setting up the main variable within the tweets
     private LongField date;
@@ -145,6 +147,7 @@ public class indexTweets extends buildIndex {
                     this.hashtags.setStringValue(hashtags.toLowerCase());
                     this.writer.addDocument(this.tweet);
                 }
+                br.close();
             }
             streamNumber++;
             this.writer.commit();
@@ -187,9 +190,9 @@ public class indexTweets extends buildIndex {
      * @param range number of returned resul
      * @return a list of  tweets matching our search parameters
      */
-    public ArrayList<Document> search(String name, String value, int range) {
+    public static ArrayList<Document> search(String name, String value, int range) {
         try {
-            String indexLocation = "./src/resources/index/indexTweets";
+            String indexLocation = AppConfigs.ALL_TWEET_INDEX;
             Directory dir = new SimpleFSDirectory(new File(indexLocation));
             DirectoryReader ir = DirectoryReader.open(dir);
             IndexSearcher searcher = new IndexSearcher(ir);
@@ -218,7 +221,8 @@ public class indexTweets extends buildIndex {
 
         // Load the file containing screenNames into a list
         List<String> usersList = txtToList(inputFile_ScreenNames);
-        int i = 0;
+        @SuppressWarnings("unused")
+		int i = 0;
         for (String screenName : usersList) {
         	// retrieve the TwitterIDs from the tweets index
             ArrayList<Document> docs = search("screenName", screenName, 1);

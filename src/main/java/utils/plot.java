@@ -25,7 +25,8 @@ public class plot extends JFrame {
 
     private static final long serialVersionUID = 1L;
 
-    public plot(String title, String chartTitle, XYDataset dataset, String fileName, int n) throws IOException {
+    @SuppressWarnings("unused")
+	public plot(String title, String chartTitle, XYDataset dataset, String fileName, int n) throws IOException {
         super(title);
 
         // Set out chart

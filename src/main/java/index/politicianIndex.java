@@ -28,6 +28,7 @@ import utils.AppConfigs;
 import utils.csv;
 import utils.twitter;
 
+@SuppressWarnings("unused")
 public class politicianIndex extends buildIndex {
 
     // Creating a new Lucene Document
@@ -57,10 +58,11 @@ public class politicianIndex extends buildIndex {
         this.index = index;
     }
 
-    @Override
+    @SuppressWarnings("unused")
+	@Override
     public void build() throws IOException {
         // Read the utils.csv file
-        csv csv = new csv();
+        //csv csv = new csv();
         twitter tw = new twitter();
         // Will contains the utils.csv file rows
         ArrayList<String[]> lines;

@@ -32,6 +32,7 @@ import utils.plot;
 
 import javax.print.attribute.standard.MediaSize;
 
+@SuppressWarnings("unused")
 public class saxAnalysis {
 
     public static final String stopwordsLocation = "src/util/stopwords.txt";
@@ -310,7 +311,8 @@ public class saxAnalysis {
      * @param termCount - - count over time of the of the top N most frequent terms
      * @return a number representing the maximum value
      */
-    private static double getMaxCount(HashMap<String, double[]> termCount){
+    @SuppressWarnings({ "unchecked", "rawtypes" })
+	private static double getMaxCount(HashMap<String, double[]> termCount){
         TreeSet totalCount = new TreeSet();
         termCount.values().forEach((double[] count) -> {
             for (int i = 0; i < count.length; i++) {
@@ -328,7 +330,8 @@ public class saxAnalysis {
      * @param termCount - count over time of the of the top N most frequent terms
      * @return a hashmap containing the term as a key and as value normalized term count occurence
      */
-    private static HashMap<String, double[]> normalize(HashMap<String, double[]> termCount){
+    @SuppressWarnings({ "rawtypes", "unchecked" })
+	private static HashMap<String, double[]> normalize(HashMap<String, double[]> termCount){
         TreeSet totalCount = new TreeSet();
         // get the total occurence count
         termCount.values().forEach((double[] count) -> {
@@ -353,7 +356,8 @@ public class saxAnalysis {
      * @param loc - location of the stopword directory
      * @return return a charArrayset corresponding to the list of stopwords which should not be considered for the analysis
      */
-    private static final CharArraySet getStopwords(String loc){
+    @SuppressWarnings({ "rawtypes", "unchecked" })
+	private static final CharArraySet getStopwords(String loc){
         CharArraySet result = CharArraySet.copy(Version.LUCENE_41, ItalianAnalyzer.getDefaultStopSet());
 
         try {
@@ -368,6 +372,7 @@ public class saxAnalysis {
                 stopwords.add(line);
             }
             result.addAll(stopwords);
+            br.close();
             return result;
 
         } catch (IOException ex) {

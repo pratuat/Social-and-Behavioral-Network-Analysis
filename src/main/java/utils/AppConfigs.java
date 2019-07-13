@@ -8,8 +8,6 @@ public class AppConfigs {
 
     public static final String RESOURCES_DIR = DATA_DIR + "resources/";
 
-    public static final String SPREAD_OF_INFLUENCE = RESOURCES_DIR + "spread_of_influence/modified_lpa/";
-
 
     //... RESOURCE FILES ...//
 
@@ -20,6 +18,8 @@ public class AppConfigs {
     public static final String YES_POLITICIANS = DATA_DIR + "input/yes_politicians.csv";
 
     public static final String NO_POLITICIANS = DATA_DIR + "input/no_politicians.csv";
+    
+    public static final String STOP_WORDS_LOCATION = DATA_DIR + "input/stopwords.txt";
 
     //... OUTPUT DATA FILES ...//
 
@@ -51,9 +51,26 @@ public class AppConfigs {
 
     public static final String CA_LCC_NO = RESOURCES_DIR + "cooc/lcc/no/LCC_NO_";
 
-    public static final String YES_LABELS_TEMPORAL_COUNTER = SPREAD_OF_INFLUENCE + "yes_labels_temporal_counter_K-Players_.csv";
+    public static final String GRAPH_K_MEANS_OUTPUT_KPLAYES = RESOURCES_DIR + "Spread_Of_Influence_Output/KMeans/GraphKMeans_Output_KPlayes.csv";
+    
+    public static final String GRAPH_K_MEANS_OUTPUT_M = RESOURCES_DIR + "Spread_Of_Influence_Output/KMeans/GraphKMeans_Output_M.csv";
+    
+    public static final String GRAPH_K_MEANS_OUTPUT_MPRIME = RESOURCES_DIR + "Spread_Of_Influence_Output/KMeans/GraphKMeans_Output_Mprime.csv";
+    
+    public static final String YES_LABELS_TEMPORAL_COUNTER = RESOURCES_DIR + "Spread_Of_Influence_Output/Modified_LPA/yes_labels_temporal_counter_K-Players_.csv";
+    
+    public static final String NO_LABELS_TEMPORAL_COUNTER = RESOURCES_DIR + "Spread_Of_Influence_Output/Modified_LPA/no_labels_temporal_counter_K-Players_.csv";
+    
+    public static final String UNKNOWN_LABELS_TEMPORAL_COUNTER = RESOURCES_DIR + "Spread_Of_Influence_Output/Modified_LPA/unknown_labels_temporal_counter_K-Players_.csv";
+    
+    public static final String MODIFIED_LPA_OUTPUT = RESOURCES_DIR + "Spread_Of_Influence_Output/Modified_LPA/Modifed_LPA_Output_K_Players.csv";
+    
+    public static final String LPA_RUN_OUTPUT = RESOURCES_DIR + "Spread_Of_Influence_Output/LPA/LPA_Output_Run";
+    
+    public static final String LPA_FINAL_OUTPUT = RESOURCES_DIR + "Spread_Of_Influence_Output/LPA/LPA_Final_Output.csv";
 
-
+    public static final String NMI_MATRIX = RESOURCES_DIR + "Spread_Of_Influence_Output/NMI/NMI_Matrix.csv";
+    
     public static final String SUB_GRAPH_S_OF_M = RESOURCES_DIR + "Sub_graph_S_of_M.gz";
 
     public static final String M_YES = RESOURCES_DIR + "top_authorities/M_yes.csv";

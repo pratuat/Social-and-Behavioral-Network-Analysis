@@ -26,7 +26,8 @@ public class ReadFile {
         }
     }
     
-    public static long getLineCount(GZIPInputStream gzipIS) throws IOException {
+    @SuppressWarnings("unused")
+	public static long getLineCount(GZIPInputStream gzipIS) throws IOException {
         BufferedReader br = new BufferedReader(new InputStreamReader(gzipIS));
 
         String line;

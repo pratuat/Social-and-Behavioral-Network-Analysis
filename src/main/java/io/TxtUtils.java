@@ -51,7 +51,8 @@ public abstract class TxtUtils {
      *   txtToList(filename, Integer) returns ArrayList<Integer>
      *   txtToList(filename, Integer, Double) returns ArrayList<ArrayList<Object>>
      */
-    public static ArrayList txtToList(String filename, Class... clazz) throws IOException, NoSuchMethodException, InstantiationException, IllegalAccessException, IllegalArgumentException, InvocationTargetException {
+    @SuppressWarnings({ "rawtypes", "unchecked" })
+	public static ArrayList txtToList(String filename, Class... clazz) throws IOException, NoSuchMethodException, InstantiationException, IllegalAccessException, IllegalArgumentException, InvocationTargetException {
         // read the file and return an array that each entry is a politician twitter name
         BufferedReader br = new BufferedReader(new FileReader(filename));
         ArrayList data = new ArrayList<>();
@@ -75,7 +76,8 @@ public abstract class TxtUtils {
         return data;
     }
 
-    public static LinkedHashSet txtToSet(String filename) throws IOException {
+    @SuppressWarnings({ "rawtypes", "unchecked" })
+	public static LinkedHashSet txtToSet(String filename) throws IOException {
         // read the file and return an array that each entry is a politician twitter name
         BufferedReader br = new BufferedReader(new FileReader(filename));
         LinkedHashSet data = new LinkedHashSet<>();
@@ -92,7 +94,8 @@ public abstract class TxtUtils {
         return data;
     }
 
-    public static void iterableToTxt(String filePath, Iterable iter) throws IOException {
+    @SuppressWarnings("rawtypes")
+	public static void iterableToTxt(String filePath, Iterable iter) throws IOException {
         FileWriter writer = new FileWriter(filePath);
         Iterator iterator = iter.iterator();
         Object obj;

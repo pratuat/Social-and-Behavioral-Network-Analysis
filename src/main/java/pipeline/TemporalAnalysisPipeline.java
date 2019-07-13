@@ -28,13 +28,14 @@ import utils.plot;
 import static algo.saxAnalysis.countTweetTerm;
 import static algo.saxAnalysis.extractDateRange;
 
+@SuppressWarnings("unused")
 public class TemporalAnalysisPipeline {
     /**
      * Create the user tweet index
      * @param sourcePath
      */
 
-        public static void createTweetIndex(String sourcePath) {
+    public static void createTweetIndex(String sourcePath) {
 
             System.out.println("Tweets Index Creation!");
             String indexPath = AppConfigs.USER_TWEET_INDEX;
@@ -56,7 +57,7 @@ public class TemporalAnalysisPipeline {
                 // Advise the index already exist
                 System.out.println(dir.toString() + ": Index already created!");
             }
-        }
+    }
 
     /**
      * create the politician index
@@ -86,7 +87,7 @@ public class TemporalAnalysisPipeline {
                 // Advise the index already exist
                 System.out.println(dir.toString() + ": Index already created!");
             }
-        }
+    }
 
     /**
      * create the yes/ no politician index
@@ -101,8 +102,8 @@ public class TemporalAnalysisPipeline {
             politicianIndex indexPoliticians = new politicianIndex(sourcePath, indexPath);
             Path dir = Paths.get(AppConfigs.USER_POLITICIAN_INDEX);
             // Divide politicians in YES and NO
-            ArrayList<Document> yesPoliticians = indexPoliticians.search("vote", "yes", 10000);
-            ArrayList<Document> noPoliticians = indexPoliticians.search("vote", "no", 10000);
+            ArrayList<Document> yesPoliticians = politicianIndex.search("vote", "yes", 10000);
+            ArrayList<Document> noPoliticians = politicianIndex.search("vote", "no", 10000);
 
 
             if (yesPoliticians != null && noPoliticians != null) {
@@ -149,7 +150,7 @@ public class TemporalAnalysisPipeline {
                 System.out.println(dir.toString() + ": Index already created!");
             }
 
-        }
+    }
 
     /**
      * plots the tweet distribution over time
@@ -158,21 +159,22 @@ public class TemporalAnalysisPipeline {
      * @throws IOException
      * @throws ParseException
      */
-        public static void plotDistributions(String indexLocation) throws Exception, IOException, ParseException {
-            saxAnalysis s = new saxAnalysis();
+    @SuppressWarnings("unused")
+	public static void plotDistributions(String indexLocation) throws Exception, IOException, ParseException {
+        	saxAnalysis s = new saxAnalysis();
             long step = 43200000;
             long[] date = extractDateRange(indexLocation);
             System.out.println(date[0]);
             System.out.println(date[1]);
 
-            HashMap<Long, Integer> distribution = s.ntweets(indexLocation, date[0], date[1], step);
+            HashMap<Long, Integer> distribution = saxAnalysis.ntweets(indexLocation, date[0], date[1], step);
             TimeSeriesCollection dataset = new TimeSeriesCollection();
-            dataset = s.createDataset(dataset, distribution, "tweets distribution");
+            dataset = saxAnalysis.createDataset(dataset, distribution, "tweets distribution");
             plot p_yesno2 = new plot("Tweet Distirbution", "Tweet Distribution over time", dataset, "./src/util/Tweets-YN.png", 200);
             p_yesno2.pack();
             p_yesno2.setLocation(800, 20);
             p_yesno2.setVisible(true);
-        }
+    }
 
     /**
      * Performs the 2nd point related to the SAX Analysis on the indexes
@@ -181,30 +183,32 @@ public class TemporalAnalysisPipeline {
      * @param step
      * @throws Exception
      */
-        public static void performSaxAnalysis(String indexLocation, String saveClusterLocation,long step) throws Exception{
+    @SuppressWarnings({ "unused", "rawtypes", "unchecked" })
+	public static void performSaxAnalysis(String indexLocation, String saveClusterLocation,long step) throws Exception{
             System.out.println("--- SAX ANALYSIS ---");
             saxAnalysis sax = new saxAnalysis();
             long[] date = extractDateRange(indexLocation);
             System.out.println("Extracting Top 1000 Terms ....");
-            ArrayList topN = sax.extractTopNTerms(1000, indexLocation);
+            ArrayList topN = saxAnalysis.extractTopNTerms(1000, indexLocation);
             ItalianAnalyzer analyzer = new ItalianAnalyzer(Version.LUCENE_41);
             System.out.println("Creating Terms Time Series...");
-            HashMap<String, double[]> countOccurenceTs =sax.countOccurenceOverTime(topN,date[0], date[1], step, indexLocation);
+            HashMap<String, double[]> countOccurenceTs =saxAnalysis.countOccurenceOverTime(topN,date[0], date[1], step, indexLocation);
 
             //System.out.println(createTermsTimeSeries(indexLocation, topN,date[1], date[0], step ));
             System.out.println("Converting Timeseries to SAX Representation...");
-            HashMap<String, String> saxRep = sax.buildSaxRepresentation(countOccurenceTs,20);
+            HashMap<String, String> saxRep = saxAnalysis.buildSaxRepresentation(countOccurenceTs,20);
             System.out.println("Performing k-means clustering...");
             kmeans km = new kmeans(saxRep,20);
             Map<String, Integer> res ;
             res = km.fit();
             System.out.println(res);
             System.out.println("Saving Term clusters to Disk ....");
-            sax.saveAllClusters(20, saveClusterLocation,res,saxRep);
-        }
+            saxAnalysis.saveAllClusters(20, saveClusterLocation,res,saxRep);
+            analyzer.close();
+    }
 
     /**
-     * Perfomr the 3rd point regarding the Coocurence analysis, with the creationg of the LCC and the KCORES
+     * Performs the 3rd point regarding the Coocurence analysis, with the creationg of the LCC and the KCORES
      * @param clusterLocation
      * @param saveLocationKcore
      * @param saveLocationLCC
@@ -212,7 +216,8 @@ public class TemporalAnalysisPipeline {
      * @throws IOException
      */
 
-        public static void performCoocurenceAnalysis(String clusterLocation, String saveLocationKcore,
+    @SuppressWarnings({ "rawtypes", "unchecked" })
+	public static void performCoocurenceAnalysis(String clusterLocation, String saveLocationKcore,
                                                      String saveLocationLCC, int k) throws IOException{
             cooccurrence c = new cooccurrence(k, clusterLocation);
 
@@ -228,19 +233,19 @@ public class TemporalAnalysisPipeline {
                     System.out.println("Extracting largest connected component for clusters #" + i);
                     WeightedUndirectedGraph largestCC = c.getLargestConnectedComponent(graph, 2);
                     // saveLCC = new PrintWriter(new FileWriter(co_lcc+i+".txt"));
-                    c.saveGraphToFile(largestCC, saveLocationLCC + i + ".txt");
+                    cooccurrence.saveGraphToFile(largestCC, saveLocationLCC + i + ".txt");
                     //saveLCC.close();
                     System.out.println("Extracting K-cores component for clusters #" + i);
                     WeightedUndirectedGraph kcores = c.extractKCores(graph, 2);
                     //PrintWriter saveKcores = new PrintWriter((new FileWriter(co_kcore+i+".txt")));
-                    c.saveGraphToFile(kcores, saveLocationKcore + i + ".txt");
+                    cooccurrence.saveGraphToFile(kcores, saveLocationKcore + i + ".txt");
                     //saveKcores.close();
                     //c.getLargestConnectedComponent(graph,2);
                 } catch (Exception e) {
                     continue;
                 }
             }
-        }
+    }
 
     /**
      * performs the 4th point related to ploting the various timeseries and observing the various action reaction present
@@ -253,7 +258,8 @@ public class TemporalAnalysisPipeline {
      * @throws IOException
      * @throws ParseException
      */
-    public static void plotTSComparaison(String indexLocation, String clustersLocation,String cl, long grain, String saveName) throws Exception, IOException, ParseException {
+    @SuppressWarnings({ "unused", "unchecked" })
+	public static void plotTSComparaison(String indexLocation, String clustersLocation,String cl, long grain, String saveName) throws Exception, IOException, ParseException {
         saxAnalysis s = new saxAnalysis();
         cooccurrence c = new cooccurrence(20, cl);
         String term;
@@ -277,7 +283,7 @@ public class TemporalAnalysisPipeline {
                     term = clusterTerms.get(i).split(" ", 2)[0];
                     System.out.println(term);
                     HashMap<Long, Integer> distribution = countTweetTerm(indexLocation,term, 1480170621755L, 1481035172059L, 10800000L);
-                    dataset = s.createDataset(dataset, distribution, term);
+                    dataset = saxAnalysis.createDataset(dataset, distribution, term);
 
                 }
                 System.out.println("Plotting :" +path.toString());
@@ -294,7 +300,7 @@ public class TemporalAnalysisPipeline {
      * @return
      */
 
-        private static Set<Integer> getTermToCompare(String file){
+    private static Set<Integer> getTermToCompare(String file){
             Set<Integer>  termToCompare = new HashSet<>();
             try(BufferedReader in = new BufferedReader(new FileReader(file))) {
                 String str;
@@ -308,9 +314,9 @@ public class TemporalAnalysisPipeline {
                 System.out.println("File Read Error");
                 return termToCompare ;
             }
-        }
+    }
 
-        public static void runTemporalAnalysisPipeline() throws  Exception{
+    public static void run() throws  Exception{
             int k = 20;
 
             String sourceTweets = "./src/util/data/stream";
@@ -341,7 +347,7 @@ public class TemporalAnalysisPipeline {
             plotTSComparaison(indexTweets,caLCCYes,clusterLocationYes,grain3,"KCOREYES");
 
 
-        }
+    }
 //        public static void main(String[] args) throws Exception {
 //            int k = 20;
 //            String sourceTweets = "./src/util/data/stream";
@@ -376,4 +382,4 @@ public class TemporalAnalysisPipeline {
 //
 //        }
 
-    }
+}

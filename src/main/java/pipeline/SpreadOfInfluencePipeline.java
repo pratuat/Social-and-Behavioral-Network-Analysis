@@ -30,16 +30,15 @@ import gnu.trove.map.TIntLongMap;
 import index.indexTweets;
 import spread_of_influence.GraphKMeans;
 import spread_of_influence.LPA;
+import utils.AppConfigs;
 
 @SuppressWarnings("unused")
 public class SpreadOfInfluencePipeline {
 	
-	private static final String RESOURCES_LOCATION = "src/resources/";
-	
 	private static int getGraphSize(String fileName) {
 		String line;
         HashSet<String> noDupSet = new HashSet<String>();
-        try (BufferedReader br = new BufferedReader(new FileReader(RESOURCES_LOCATION+fileName))) {
+        try (BufferedReader br = new BufferedReader(new FileReader(fileName))) {
             while ((line = br.readLine()) != null) {
             	noDupSet.add(line.split("\t")[0]);
             	noDupSet.add(line.split("\t")[1]);
@@ -86,7 +85,7 @@ public class SpreadOfInfluencePipeline {
 		kMeans.cluster();
 		
 		// Save the clustering result in a csv file
-		Path file = Paths.get(RESOURCES_LOCATION+"Spread_Of_Influence_Output/KMeans/"+outputFile);
+		Path file = Paths.get(outputFile);
 		
 		TIntLongMap mapInt2Long = mapLong2Int.getInverted();
 		
@@ -103,7 +102,7 @@ public class SpreadOfInfluencePipeline {
 		
 		Files.write(file, lines, StandardCharsets.UTF_8);
 		date = new Date(System.currentTimeMillis());
-		System.out.println(formatter.format(date)+" INFO: Results saved in the folowing csv file: "+RESOURCES_LOCATION+"Spread_Of_Influence_Output/KMeans/"+outputFile+".");
+		System.out.println(formatter.format(date)+" INFO: Results saved in the folowing csv file: "+outputFile+".");
 		
 	}
 	
@@ -123,23 +122,10 @@ public class SpreadOfInfluencePipeline {
 			seedsNo.add(14);seedsNo.add(15);seedsNo.add(16);seedsNo.add(17);
 		*/
 		
-		// Convert Twitter screenNames into TwitterIds
 		SimpleDateFormat formatter= new SimpleDateFormat("dd-MM-yyyy 'at' HH:mm:ss");
 		
 		Date date = new Date(System.currentTimeMillis());
 		System.out.println(formatter.format(date)+" INFO: Starting GraphKMeans...");
-		
-		//date = new Date(System.currentTimeMillis());
-		//System.out.println(formatter.format(date)+" INFO: Converting the twitter screenNames into twitterIDs...");
-		
-		/*
-		indexTweets.fromScreenNameToUserId(RESOURCES_LOCATION+"Yes_No_Identification/M_no.csv", RESOURCES_LOCATION+"Yes_No_Identification/M_no_IDs.csv");
-		indexTweets.fromScreenNameToUserId(RESOURCES_LOCATION+"Yes_No_Identification/M_yes.csv", RESOURCES_LOCATION+"Yes_No_Identification/M_yes_IDs.csv");
-		indexTweets.fromScreenNameToUserId(RESOURCES_LOCATION+"Yes_No_Identification/K_no.csv", RESOURCES_LOCATION+"Yes_No_Identification/K_no_IDs.csv");
-		indexTweets.fromScreenNameToUserId(RESOURCES_LOCATION+"Yes_No_Identification/K_yes.csv", RESOURCES_LOCATION+"Yes_No_Identification/K_yes_IDs.csv");
-		indexTweets.fromScreenNameToUserId(RESOURCES_LOCATION+"Yes_No_Identification/Mp_no.csv", RESOURCES_LOCATION+"Yes_No_Identification/Mp_no_IDs.csv");
-		indexTweets.fromScreenNameToUserId(RESOURCES_LOCATION+"Yes_No_Identification/Mp_yes.csv", RESOURCES_LOCATION+"Yes_No_Identification/Mp_yes_IDs.csv");
-		*/
 		
 		// load the S(M) graph mapping Long to Integer
 		date = new Date(System.currentTimeMillis());
@@ -147,30 +133,30 @@ public class SpreadOfInfluencePipeline {
 	
 		int graphSize = 10997;
 		WeightedDirectedGraph g = new WeightedDirectedGraph(graphSize + 1);
-		String graphFilename = "Sub_Graph_S_of_M.gz";
+		String graphFilename = AppConfigs.SUB_GRAPH_S_OF_M;
 		LongIntDict mapLong2Int = new LongIntDict();
-		GraphReader.readGraphLong2IntRemap(g, RESOURCES_LOCATION+graphFilename, mapLong2Int, false);
+		GraphReader.readGraphLong2IntRemap(g, graphFilename, mapLong2Int, false);
 		
 		
 		/**
 		 * run the GraphKMeans for the top k players
 		 */
 		
-		//runKMeansWithSeed(g, mapLong2Int, RESOURCES_LOCATION+"Yes_No_Identification/K_yes.csv", RESOURCES_LOCATION+"Yes_No_Identification/K_no.csv", "GraphKMeans_Output_KPlayes.csv", "the K-Playes");
+		runKMeansWithSeed(g, mapLong2Int, AppConfigs.K_YES, AppConfigs.K_NO, AppConfigs.GRAPH_K_MEANS_OUTPUT_KPLAYES, "the K-Playes");
 		
 		
 		/**
 		 * run for M
 		 */
 		
-		runKMeansWithSeed(g, mapLong2Int, RESOURCES_LOCATION+"Yes_No_Identification/M_yes.csv", RESOURCES_LOCATION+"Yes_No_Identification/M_no.csv", "GraphKMeans_Output_M.csv", "M");
+		runKMeansWithSeed(g, mapLong2Int, AppConfigs.M_YES, AppConfigs.M_NO, AppConfigs.GRAPH_K_MEANS_OUTPUT_M, "M");
 		
 		
 		/**
 		 * run for M prime
 		 */
 		
-		runKMeansWithSeed(g, mapLong2Int, RESOURCES_LOCATION+"Yes_No_Identification/Mp_yes.csv", RESOURCES_LOCATION+"Yes_No_Identification/Mp_no.csv", "GraphKMeans_Output_Mprime.csv", "M_prime");
+		runKMeansWithSeed(g, mapLong2Int, AppConfigs.MP_YES,AppConfigs.MP_NO, AppConfigs.GRAPH_K_MEANS_OUTPUT_MPRIME, "M_prime");
 		
 	}
 
@@ -188,31 +174,20 @@ public class SpreadOfInfluencePipeline {
         lpaAlgorithm(g, seedsYes, seedsNo, "Test", 20);
         */
  
-        
-        
-        // Convert Twitter names into TwitterID
+       
     	SimpleDateFormat formatter= new SimpleDateFormat("dd-MM-yyyy 'at' HH:mm:ss");
 		
 		Date date = new Date(System.currentTimeMillis());
 		System.out.println(formatter.format(date)+" INFO: LPA Algorithm...");
-		//date = new Date(System.currentTimeMillis());
-		// System.out.println(formatter.format(date)+" INFO: Converting the twitter screenNames into twitterIDs...");
-        
-		// uncomment this if running for the first time
-		/*
-    	indexTweets.fromScreenNameToUserId(RESOURCES_LOCATION+"Yes_No_Identification/K_no.csv", RESOURCES_LOCATION+"Yes_No_Identification/K_no_IDs.csv");
-		indexTweets.fromScreenNameToUserId(RESOURCES_LOCATION+"Yes_No_Identification/K_yes.csv", RESOURCES_LOCATION+"Yes_No_Identification/K_yes_IDs.csv");
-		*/
 		
         // load graph and mapper
     	date = new Date(System.currentTimeMillis());
     	System.out.println(formatter.format(date)+" INFO: Loading the full network...");
         int graphSize = 450193;
-    	//int graphSize = 6217;
         WeightedDirectedGraph g = new WeightedDirectedGraph(graphSize + 1);
-        String graphFilename = "data/Official_SBN-ITA-2016-Net.gz";
+        String graphFilename = AppConfigs.USER_GRAPH_PATH;
         LongIntDict mapLong2Int = new LongIntDict();
-        GraphReader.readGraphLong2IntRemap(g, RESOURCES_LOCATION+graphFilename, mapLong2Int, false);
+        GraphReader.readGraphLong2IntRemap(g, graphFilename, mapLong2Int, false);
         
         // Instantiate an LPA object
         LPA GraphLabelPropagator = new LPA();
@@ -225,14 +200,14 @@ public class SpreadOfInfluencePipeline {
         System.out.println(formatter.format(date)+" INFO: Running the LPA algorithm using the top K-Playes as seeds...");
         
         // Load the seeds nodes from file mapping them from Long to int
-        int[] seedsYes = GraphLabelPropagator.loadSeed(mapLong2Int, RESOURCES_LOCATION+"Yes_No_Identification/K_yes.csv");
-        int[] seedsNo = GraphLabelPropagator.loadSeed(mapLong2Int, RESOURCES_LOCATION+"Yes_No_Identification/K_no.csv");
+        int[] seedsYes = GraphLabelPropagator.loadSeed(mapLong2Int, AppConfigs.K_YES);
+        int[] seedsNo = GraphLabelPropagator.loadSeed(mapLong2Int, AppConfigs.K_NO);
         
         // Run the label propagation algorithm on the full graph
-        GraphLabelPropagator.lpaAlgorithm(g, seedsYes, seedsNo, "_K-Players_", 100);
+        GraphLabelPropagator.lpaAlgorithm(g, seedsYes, seedsNo, 100);
         
         // Save the clustering result in a csv file
- 		Path file = Paths.get(RESOURCES_LOCATION+"Spread_Of_Influence_Output/Modified_LPA/Modifed_LPA_Output_K_Players.csv");
+ 		Path file = Paths.get(AppConfigs.MODIFIED_LPA_OUTPUT);
  		
  		TIntLongMap mapInt2Long = mapLong2Int.getInverted();
  		
@@ -256,7 +231,7 @@ public class SpreadOfInfluencePipeline {
  		Files.write(file, lines, StandardCharsets.UTF_8);
         
  		date = new Date(System.currentTimeMillis());
- 		System.out.println(formatter.format(date)+" INFO: Results saved in the folowing csv file: "+RESOURCES_LOCATION+"Spread_Of_Influence_Output/Modified_LPA/Modifed_LPA_Output_K_Players.csv.");
+ 		System.out.println(formatter.format(date)+" INFO: Results saved in the folowing csv file: "+AppConfigs.MODIFIED_LPA_OUTPUT);
       
     }
 
@@ -269,12 +244,11 @@ public class SpreadOfInfluencePipeline {
 		// load graph and mapper
     	date = new Date(System.currentTimeMillis());
     	System.out.println(formatter.format(date)+" INFO: Loading the S(M) network...");
-        //int graphSize = 450193;
     	int graphSize = 10997;
         WeightedDirectedGraph g = new WeightedDirectedGraph(graphSize + 1);
-        String graphFilename = "Sub_Graph_S_of_M.gz";
+        String graphFilename = AppConfigs.SUB_GRAPH_S_OF_M;
         LongIntDict mapLong2Int = new LongIntDict();
-        GraphReader.readGraphLong2IntRemap(g, RESOURCES_LOCATION+graphFilename, mapLong2Int, false);
+        GraphReader.readGraphLong2IntRemap(g, graphFilename, mapLong2Int, false);
 		
         int i = 1;
         while (i<=10) {
@@ -300,7 +274,7 @@ public class SpreadOfInfluencePipeline {
         	}
             
             // Save the clustering result in a csv file
-     		Path file = Paths.get(RESOURCES_LOCATION+"Spread_Of_Influence_Output/LPA/LPA_Output_Run_"+i+".csv");
+     		Path file = Paths.get(AppConfigs.LPA_RUN_OUTPUT+i+".csv");
      		
      		TIntLongMap mapInt2Long = mapLong2Int.getInverted();
      		
@@ -314,7 +288,7 @@ public class SpreadOfInfluencePipeline {
      		Files.write(file, lines, StandardCharsets.UTF_8);
             
      		date = new Date(System.currentTimeMillis());
-     		System.out.println(formatter.format(date)+" INFO: Output of run N°"+i+" saved in the folowing csv file: "+RESOURCES_LOCATION+"Spread_Of_Influence_Output/LPA/LPA_Output_Run_"+i+".csv");
+     		System.out.println(formatter.format(date)+" INFO: Output of run N°"+i+" saved in the folowing csv file: "+AppConfigs.LPA_RUN_OUTPUT+i+".csv");
         	
         	i++;
         	
@@ -342,22 +316,22 @@ public class SpreadOfInfluencePipeline {
     	
     	
     	// prepare the output file
-    	Path file = Paths.get(RESOURCES_LOCATION+"Spread_Of_Influence_Output/LPA/LPA_Final_Output.csv");
+    	Path file = Paths.get(AppConfigs.LPA_FINAL_OUTPUT);
     	ArrayList<String> lines = new ArrayList<String>(); 
  		lines.add("Node,Comunity_ID");
     	
  		// prepare the file readers
     	BufferedReader[] readers = new BufferedReader[10];
-    	readers[0] = new BufferedReader(new FileReader(RESOURCES_LOCATION+"Spread_Of_Influence_Output/LPA/LPA_Output_Run_1.csv"));
-    	readers[1] = new BufferedReader(new FileReader(RESOURCES_LOCATION+"Spread_Of_Influence_Output/LPA/LPA_Output_Run_2.csv"));
-    	readers[2] = new BufferedReader(new FileReader(RESOURCES_LOCATION+"Spread_Of_Influence_Output/LPA/LPA_Output_Run_3.csv"));
-    	readers[3] = new BufferedReader(new FileReader(RESOURCES_LOCATION+"Spread_Of_Influence_Output/LPA/LPA_Output_Run_4.csv"));
-    	readers[4] = new BufferedReader(new FileReader(RESOURCES_LOCATION+"Spread_Of_Influence_Output/LPA/LPA_Output_Run_5.csv"));
-    	readers[5] = new BufferedReader(new FileReader(RESOURCES_LOCATION+"Spread_Of_Influence_Output/LPA/LPA_Output_Run_6.csv"));
-    	readers[6] = new BufferedReader(new FileReader(RESOURCES_LOCATION+"Spread_Of_Influence_Output/LPA/LPA_Output_Run_7.csv"));
-    	readers[7] = new BufferedReader(new FileReader(RESOURCES_LOCATION+"Spread_Of_Influence_Output/LPA/LPA_Output_Run_8.csv"));
-    	readers[8] = new BufferedReader(new FileReader(RESOURCES_LOCATION+"Spread_Of_Influence_Output/LPA/LPA_Output_Run_9.csv"));
-		readers[9] = new BufferedReader(new FileReader(RESOURCES_LOCATION+"Spread_Of_Influence_Output/LPA/LPA_Output_Run_10.csv"));
+    	readers[0] = new BufferedReader(new FileReader(AppConfigs.LPA_RUN_OUTPUT+"1.csv"));
+    	readers[1] = new BufferedReader(new FileReader(AppConfigs.LPA_RUN_OUTPUT+"2.csv"));
+    	readers[2] = new BufferedReader(new FileReader(AppConfigs.LPA_RUN_OUTPUT+"3.csv"));
+    	readers[3] = new BufferedReader(new FileReader(AppConfigs.LPA_RUN_OUTPUT+"4.csv"));
+    	readers[4] = new BufferedReader(new FileReader(AppConfigs.LPA_RUN_OUTPUT+"5.csv"));
+    	readers[5] = new BufferedReader(new FileReader(AppConfigs.LPA_RUN_OUTPUT+"6.csv"));
+    	readers[6] = new BufferedReader(new FileReader(AppConfigs.LPA_RUN_OUTPUT+"7.csv"));
+    	readers[7] = new BufferedReader(new FileReader(AppConfigs.LPA_RUN_OUTPUT+"8.csv"));
+    	readers[8] = new BufferedReader(new FileReader(AppConfigs.LPA_RUN_OUTPUT+"9.csv"));
+		readers[9] = new BufferedReader(new FileReader(AppConfigs.LPA_RUN_OUTPUT+"10.csv"));
     	
 		Long[] users = new Long[10];
 		int[] communities = new int[10];
@@ -390,7 +364,7 @@ public class SpreadOfInfluencePipeline {
 				Set<Long> users_set = new HashSet<Long>(Arrays.asList(users));
 				if (users_set.size() != 1) {
 					date = new Date(System.currentTimeMillis());
-			 		System.out.println(formatter.format(date)+" ERROR: Differents users found on the same line number in the files. The file might not be in the same order.");
+			 		System.out.println(formatter.format(date)+" ERROR: Differents users found on the same line number in the files. The files might not be in the same order.");
 			 		break;
 				}
 				
@@ -405,7 +379,7 @@ public class SpreadOfInfluencePipeline {
 		Files.write(file, lines, StandardCharsets.UTF_8);
         
  		date = new Date(System.currentTimeMillis());
- 		System.out.println(formatter.format(date)+" INFO: Final output saved in the folowing csv file: "+RESOURCES_LOCATION+"Spread_Of_Influence_Output/LPA/LPA_Final_Output.csv");
+ 		System.out.println(formatter.format(date)+" INFO: Final output saved in the folowing csv file: "+AppConfigs.LPA_FINAL_OUTPUT);
 		
     }
     
@@ -518,16 +492,16 @@ public class SpreadOfInfluencePipeline {
 		// compute the NMIs
 		for(int i = 0; i <= 9; i++) {
 			// prepare the file readers
-			readers[0] = new BufferedReader(new FileReader(RESOURCES_LOCATION+"Spread_Of_Influence_Output/LPA/LPA_Output_Run_1.csv"));
-	    	readers[1] = new BufferedReader(new FileReader(RESOURCES_LOCATION+"Spread_Of_Influence_Output/LPA/LPA_Output_Run_2.csv"));
-	    	readers[2] = new BufferedReader(new FileReader(RESOURCES_LOCATION+"Spread_Of_Influence_Output/LPA/LPA_Output_Run_3.csv"));
-	    	readers[3] = new BufferedReader(new FileReader(RESOURCES_LOCATION+"Spread_Of_Influence_Output/LPA/LPA_Output_Run_4.csv"));
-	    	readers[4] = new BufferedReader(new FileReader(RESOURCES_LOCATION+"Spread_Of_Influence_Output/LPA/LPA_Output_Run_5.csv"));
-	    	readers[5] = new BufferedReader(new FileReader(RESOURCES_LOCATION+"Spread_Of_Influence_Output/LPA/LPA_Output_Run_6.csv"));
-	    	readers[6] = new BufferedReader(new FileReader(RESOURCES_LOCATION+"Spread_Of_Influence_Output/LPA/LPA_Output_Run_7.csv"));
-	    	readers[7] = new BufferedReader(new FileReader(RESOURCES_LOCATION+"Spread_Of_Influence_Output/LPA/LPA_Output_Run_8.csv"));
-	    	readers[8] = new BufferedReader(new FileReader(RESOURCES_LOCATION+"Spread_Of_Influence_Output/LPA/LPA_Output_Run_9.csv"));
-			readers[9] = new BufferedReader(new FileReader(RESOURCES_LOCATION+"Spread_Of_Influence_Output/LPA/LPA_Output_Run_10.csv"));
+			readers[0] = new BufferedReader(new FileReader(AppConfigs.LPA_RUN_OUTPUT+"1.csv"));
+	    	readers[1] = new BufferedReader(new FileReader(AppConfigs.LPA_RUN_OUTPUT+"2.csv"));
+	    	readers[2] = new BufferedReader(new FileReader(AppConfigs.LPA_RUN_OUTPUT+"3.csv"));
+	    	readers[3] = new BufferedReader(new FileReader(AppConfigs.LPA_RUN_OUTPUT+"4.csv"));
+	    	readers[4] = new BufferedReader(new FileReader(AppConfigs.LPA_RUN_OUTPUT+"5.csv"));
+	    	readers[5] = new BufferedReader(new FileReader(AppConfigs.LPA_RUN_OUTPUT+"6.csv"));
+	    	readers[6] = new BufferedReader(new FileReader(AppConfigs.LPA_RUN_OUTPUT+"7.csv"));
+	    	readers[7] = new BufferedReader(new FileReader(AppConfigs.LPA_RUN_OUTPUT+"8.csv"));
+	    	readers[8] = new BufferedReader(new FileReader(AppConfigs.LPA_RUN_OUTPUT+"9.csv"));
+			readers[9] = new BufferedReader(new FileReader(AppConfigs.LPA_RUN_OUTPUT+"10.csv"));
 			
 			// prepare partition a
 			BufferedReader reader = readers[i];
@@ -564,7 +538,7 @@ public class SpreadOfInfluencePipeline {
 		}
 		
 		// Save the matrix in the file system
-    	Path file = Paths.get(RESOURCES_LOCATION+"Spread_Of_Influence_Output/NMI/NMI_Matrix.csv");
+    	Path file = Paths.get(AppConfigs.NMI_MATRIX);
     	ArrayList<String> lines = new ArrayList<String>();
     	String line;
  		for(int i = 0; i < 10; i++) {
@@ -580,16 +554,14 @@ public class SpreadOfInfluencePipeline {
  		Files.write(file, lines, StandardCharsets.UTF_8);
  		
  		date = new Date(System.currentTimeMillis());
- 		System.out.println(formatter.format(date)+" INFO: The final matrix has been saved in the folowing csv file: "+RESOURCES_LOCATION+"Spread_Of_Influence_Output/NMI/NMI_Matrix.csv");
-		
- 		// Plot the Matrix
+ 		System.out.println(formatter.format(date)+" INFO: The final matrix has been saved in the folowing csv file: "+AppConfigs.NMI_MATRIX);
 		
     }
     
 	public static void run() throws FileNotFoundException, IOException, ParseException, InterruptedException {
-		//int graphSize = getGraphSize("Sub_Graph_S_of_M");
-		//System.out.println(graphSize);
-		runGraphKMeans();
+		int graphSize = getGraphSize(AppConfigs.SUB_GRAPH_S_OF_M);
+		System.out.println(graphSize);
+		//runGraphKMeans();
 		//runLPA();
 		//runLPAX10();
 		//chooseCommunityXUser();

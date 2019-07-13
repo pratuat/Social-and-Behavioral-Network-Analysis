@@ -12,6 +12,7 @@ import twitter4j.json.DataObjectFactory;
  *
  * @author stilo
  */
+@SuppressWarnings("deprecation")
 public class StatusWrapper {
 
     private static long GCOUNT = 0;
@@ -46,7 +47,7 @@ public class StatusWrapper {
         }
     }
 
-    public void load(String xmlLine) throws TwitterException {
+	public void load(String xmlLine) throws TwitterException {
         if (status == null) {
             m.reset(xmlLine);
             if (m.find()) {
@@ -98,14 +99,14 @@ public class StatusWrapper {
         return global;
     }
     
-    public synchronized String getRawJson(){
+	public synchronized String getRawJson(){
         if(this.rawJson==null){
             this.rawJson=DataObjectFactory.getRawJSON(status);
         }
         return this.rawJson;
     }
 
-    public String toXMLLine() {
+	public String toXMLLine() {
         String ret = "<o>";
         ret += "<t>" + time + "</t>";
         ret += "<l>" + lang + "</l>";

@@ -18,6 +18,7 @@ import java.util.stream.Collectors;
  * Kmeans implementation for SAX strings
  * 
  */
+@SuppressWarnings("unused")
 public class kmeans {
 
     private Map<String, Integer> clusters;

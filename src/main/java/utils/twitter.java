@@ -26,6 +26,7 @@ import twitter4j.TwitterFactory;
 import twitter4j.User;
 import twitter4j.conf.ConfigurationBuilder;
 
+@SuppressWarnings("unused")
 public  class twitter {
     public IndexReader ir;
     public static final int MINIMUMFOLLOWERS = 5000;

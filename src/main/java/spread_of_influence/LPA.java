@@ -1,3 +1,9 @@
+/** 
+ * Class for LPA clustering of a G graph
+ * May. 2019
+ * @author Durand Azimedem
+*/
+
 package spread_of_influence;
 
 import io.TxtUtils;
@@ -18,7 +24,6 @@ import utils.AppConfigs;
 
 public class LPA {
 
-    private static final String RESOURCES_LOCATION = AppConfigs.RESOURCES_DIR;
     public Map<Integer, Integer> nodesLabels;
     
     public LPA() {
@@ -87,7 +92,7 @@ public class LPA {
         return popular;
     }
 
-    public void lpaAlgorithm(WeightedDirectedGraph g, int[] seedsYes, int[] seedsNo, String outputSufix, int killAt) throws IOException {
+    public void lpaAlgorithm(WeightedDirectedGraph g, int[] seedsYes, int[] seedsNo, int killAt) throws IOException {
     	
     	SimpleDateFormat formatter= new SimpleDateFormat("dd-MM-yyyy 'at' HH:mm:ss");
         // all the non seed nodes will be labeled with unique labels
@@ -160,9 +165,9 @@ public class LPA {
                 // j is an exact multiple of 4
             	Date date = new Date(System.currentTimeMillis());
         		System.out.println(formatter.format(date)+" INFO: Saving temporal counters");
-                TxtUtils.iterableToTxt(RESOURCES_LOCATION + "Spread_Of_Influence_Output/Modified_LPA/yes_labels_temporal_counter" + outputSufix + ".csv", yesCounterOverTime);
-                TxtUtils.iterableToTxt(RESOURCES_LOCATION + "Spread_Of_Influence_Output/Modified_LPA/no_labels_temporal_counter" + outputSufix + ".csv", noCounterOverTime);
-                TxtUtils.iterableToTxt(RESOURCES_LOCATION + "Spread_Of_Influence_Output/Modified_LPA/unknown_labels_temporal_counter" + outputSufix + ".csv", unknownCounterOverTime);
+                TxtUtils.iterableToTxt(AppConfigs.YES_LABELS_TEMPORAL_COUNTER, yesCounterOverTime);
+                TxtUtils.iterableToTxt(AppConfigs.NO_LABELS_TEMPORAL_COUNTER, noCounterOverTime);
+                TxtUtils.iterableToTxt(AppConfigs.UNKNOWN_LABELS_TEMPORAL_COUNTER, unknownCounterOverTime);
             }
 
             // print counters for the current iteration
@@ -284,9 +289,9 @@ public class LPA {
         System.out.println(formatter.format(date)+" INFO: "+counterUnknown+" 'Unknown' labels.");
 
         // save to files the temporal counters
-        TxtUtils.iterableToTxt(RESOURCES_LOCATION + "Spread_Of_Influence_Output/Modified_LPA/yes_labels_temporal_counter" + outputSufix + ".csv", yesCounterOverTime);
-        TxtUtils.iterableToTxt(RESOURCES_LOCATION + "Spread_Of_Influence_Output/Modified_LPA/no_labels_temporal_counter" + outputSufix + ".csv", noCounterOverTime);
-        TxtUtils.iterableToTxt(RESOURCES_LOCATION + "Spread_Of_Influence_Output/Modified_LPA/unknown_labels_temporal_counter" + outputSufix + ".csv", unknownCounterOverTime);
+        TxtUtils.iterableToTxt(AppConfigs.YES_LABELS_TEMPORAL_COUNTER, yesCounterOverTime);
+        TxtUtils.iterableToTxt(AppConfigs.NO_LABELS_TEMPORAL_COUNTER, noCounterOverTime);
+        TxtUtils.iterableToTxt(AppConfigs.UNKNOWN_LABELS_TEMPORAL_COUNTER, unknownCounterOverTime);
         
     }
 

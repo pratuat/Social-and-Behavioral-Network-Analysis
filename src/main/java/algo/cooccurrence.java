@@ -15,9 +15,11 @@ import org.apache.lucene.queryparser.classic.ParseException;
 import utils.AppConfigs;
 //import sun.security.pkcs.ParsingException;
 
+@SuppressWarnings("unused")
 public class cooccurrence {
 
-    private int clusterNumber;
+    @SuppressWarnings("unused")
+	private int clusterNumber;
     private String clusterLocation;
 
     public cooccurrence(int k, String loc){
@@ -33,16 +35,18 @@ public class cooccurrence {
      * @throws IOException
      * @throws FileNotFoundException
      */
-    public ArrayList loadCluster (int cNumber) throws IOException, FileNotFoundException {
+    @SuppressWarnings({ "unchecked", "rawtypes" })
+	public ArrayList loadCluster (int cNumber) throws IOException, FileNotFoundException {
         // Map<Integer, String> clusterGraph = new HashMap<Integer, String>;
-        ArrayList terms = new ArrayList();
+		ArrayList terms = new ArrayList();
         FileInputStream fstream = new FileInputStream(clusterLocation + cNumber+".txt");
         System.out.println(clusterLocation + cNumber+".txt");
         InputStreamReader clusterReader = new InputStreamReader(fstream);
         //for (int i = 0; i < clusterReader.; i++)
         try (BufferedReader br = new BufferedReader(clusterReader)) {
             String line;
-            int n = 0;
+            @SuppressWarnings("unused")
+			int n = 0;
             while ((line = br.readLine()) != null) {
                 String[] r = line.split("\n");
                 terms.add(r[0]);
@@ -60,7 +64,8 @@ public class cooccurrence {
      * @return a hash map with the cluster number as key and the term name as value
      * @throws IOException
      */
-    public Map<Integer,ArrayList> getClusterTerms (int cNumbers) throws IOException{
+    @SuppressWarnings("rawtypes")
+	public Map<Integer,ArrayList> getClusterTerms (int cNumbers) throws IOException{
 
         Map<Integer, ArrayList> clusterTerms = new HashMap<>();
 

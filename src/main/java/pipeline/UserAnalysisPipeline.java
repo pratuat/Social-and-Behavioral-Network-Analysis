@@ -30,7 +30,7 @@ public class UserAnalysisPipeline {
     public static IndexSearcher userPoliticianIndexSearcher;
     public static HashMap<Long, String> userIntIdScreenNameHashMap= new HashMap<>();
 
-    public static void runUserAnalysisPipeline()  throws IOException, JSONException, ParseException, Exception {
+    public static void run()  throws IOException, JSONException, ParseException, Exception {
 
         buildUserTweetIndex();
         buildUserPoliticianIndex();
@@ -47,7 +47,8 @@ public class UserAnalysisPipeline {
      * @throws IOException
      * @throws InterruptedException
      */
-    public static void generateUserInducedSubGraphs() throws IOException, InterruptedException {
+    @SuppressWarnings({ "rawtypes", "unchecked" })
+	public static void generateUserInducedSubGraphs() throws IOException, InterruptedException {
         System.out.println("=====================================");
         System.out.println("Generating user induced subgraph ...");
 
@@ -316,7 +317,8 @@ public class UserAnalysisPipeline {
      * Build tweet indexes for tweets which mention all politicians, also short-list those users and saves to csv file
      * @throws Exception
      */
-    public static void buildUserTweetIndex() throws Exception {
+    @SuppressWarnings({ "rawtypes", "unchecked" })
+	public static void buildUserTweetIndex() throws Exception {
 
         System.out.println("=============================");
         System.out.println("Building user tweet index ...");
@@ -362,7 +364,8 @@ public class UserAnalysisPipeline {
         System.out.println("-----------------------------");
     }
 
-    public static List[] shortListUsers() {
+    @SuppressWarnings("rawtypes")
+	public static List[] shortListUsers() {
 
         List<String> topUsersByTweetCount = FileUtility.loadSortCSV(AppConfigs.USER_TWEET_COUNT, 2).
                 stream().
