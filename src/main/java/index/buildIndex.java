@@ -20,8 +20,8 @@ import utils.AppConfigs;
 
 
 public abstract class buildIndex {
-    // Setting up the maoin parameters
-    public static final String stopwordsLocation = AppConfigs.STOP_WORDS_LOCATION;
+    // Setting up the main parameters
+    public static final String stopwordsLocation = AppConfigs.STOPWORDS;
     public Directory dir;
     public Analyzer analyzer;
     public IndexWriterConfig cfg;

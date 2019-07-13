@@ -37,7 +37,7 @@ public class politicianIndex extends buildIndex {
     private StringField vote;
     private StringField party;
     private StringField screenName;
-    private static String indexLocation = AppConfigs.ALL_TWEET_INDEX;
+    private static String indexLocation = AppConfigs.TWEET_INDEX;
     private static IndexReader ir;
 
     public politicianIndex(String stream, String index) {

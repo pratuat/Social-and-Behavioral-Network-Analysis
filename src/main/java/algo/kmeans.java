@@ -130,7 +130,7 @@ public class kmeans {
         for (int c = 0; c<k ; c++) {
             int cc = c;
             Map<String,Integer> currentCluster = filterByValue(this.clusters, value -> value == cc);
-             System.out.println(currentCluster);
+            // System.out.println(currentCluster);
 
             // teking the averache char value for all string in the cluster
             for (int i = 0; i < saxStringSize; i++) {

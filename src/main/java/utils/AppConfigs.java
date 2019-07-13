@@ -1,5 +1,8 @@
 package utils;
 
+import javax.xml.crypto.Data;
+
+@SuppressWarnings("unused")
 public class AppConfigs {
 
     public static final String PROJECT_DIR = "./";
@@ -18,8 +21,11 @@ public class AppConfigs {
     public static final String YES_POLITICIANS = DATA_DIR + "input/yes_politicians.csv";
 
     public static final String NO_POLITICIANS = DATA_DIR + "input/no_politicians.csv";
-    
-    public static final String STOP_WORDS_LOCATION = DATA_DIR + "input/stopwords.txt";
+
+    public static final String ORIGINAL_POLITICIANS = DATA_DIR + "input/list_politician.csv";
+
+    public static final String STOPWORDS = RESOURCES_DIR + "stopwords.txt";
+
 
     //... OUTPUT DATA FILES ...//
 
@@ -43,13 +49,13 @@ public class AppConfigs {
 
     public static final String CLUSTER_LOCATION_NO = RESOURCES_DIR + "noClusters/no_";
 
-    public static final String CA_KCORE_YES = RESOURCES_DIR + "cooc/kcore/yes/KCORE_YES_";
+    public static final String CA_KCORE_YES = RESOURCES_DIR + "cooc/kcore/yes/";
 
-    public static final String CA_KCORE_NO = RESOURCES_DIR + "cooc/kcore/no/KCORE_NO_";
+    public static final String CA_KCORE_NO = RESOURCES_DIR + "cooc/kcore/no/";
 
-    public static final String CA_LCC_YES = RESOURCES_DIR + "cooc/lcc/yes/LCC_YES_";
+    public static final String CA_LCC_YES = RESOURCES_DIR + "cooc/lcc/yes/";
 
-    public static final String CA_LCC_NO = RESOURCES_DIR + "cooc/lcc/no/LCC_NO_";
+    public static final String CA_LCC_NO = RESOURCES_DIR + "cooc/lcc/no/";
 
     public static final String GRAPH_K_MEANS_OUTPUT_KPLAYES = RESOURCES_DIR + "Spread_Of_Influence_Output/KMeans/GraphKMeans_Output_KPlayes.csv";
     
@@ -86,7 +92,7 @@ public class AppConfigs {
     public static final String K_NO = NO_USERS_500KPP;
 
     //... INDEXES ...//
-
+    
     public static final String ALL_TWEET_INDEX = DATA_DIR + "indexes/all_tweet/";
 
     public static final String USER_TWEET_INDEX = DATA_DIR + "indexes/user_tweet/";
@@ -96,5 +102,19 @@ public class AppConfigs {
     public static final String USER_YES_POLITICIAN_INDEX = DATA_DIR + "indexes/user_yes_politician/";
 
     public static final String USER_NO_POLITICIAN_INDEX = DATA_DIR + "indexes/user_no_politician/";
+
+    public static final String TWEET_STREAM = DATA_DIR +"stream";
+
+    public static final String TWEET_INDEX = DATA_DIR + "indexes/indexTweets";
+
+    public static final String POLITICIAN_INDEX = DATA_DIR + "indexes/indexPoliticians";
+
+    public static final String POLITICIAN_YES = DATA_DIR + "indexes/indexYes";
+
+    public static final String POLITICIAN_NO = DATA_DIR + "indexes/indexNo";
+
+    public static final String SAVE_IMAGE = RESOURCES_DIR + "pic/";
+
+
 
 }
