@@ -37,10 +37,10 @@ public class TemporalAnalysisPipeline {
         public static void createTweetIndex(String sourcePath) {
 
             System.out.println("Tweets Index Creation!");
-            String indexPath = AppConfigs.USER_TWEET_INDEX;
+            String indexPath = AppConfigs.TWEET_INDEX;
             // Initialize a new TweetsIndexBuilder
             indexTweets indexAllTweets = new indexTweets(sourcePath, indexPath);
-            Path dir = Paths.get("index/indexTweets");
+            Path dir = Paths.get(AppConfigs.TWEET_INDEX);
             if (!Files.exists(dir)) {
                 try {
                     // Build the index
@@ -53,7 +53,7 @@ public class TemporalAnalysisPipeline {
                     ex.printStackTrace();
                 }
             } else {
-                // Advise the index already exist
+
                 System.out.println(dir.toString() + ": Index already created!");
             }
         }
@@ -66,10 +66,10 @@ public class TemporalAnalysisPipeline {
     public static void createPoliticianIndex(String sourcePath) {
 
             System.out.println("Politician Index Creation!");
-            String indexPath = AppConfigs.USER_POLITICIAN_INDEX;
+            String indexPath = AppConfigs.POLITICIAN_INDEX;
             // Initialize a new TweetsIndexBuilder
             politicianIndex indexPoliticians = new politicianIndex(sourcePath, indexPath);
-            Path dir = Paths.get(AppConfigs.USER_POLITICIAN_INDEX);
+            Path dir = Paths.get(AppConfigs.POLITICIAN_INDEX);
             if (!Files.exists(dir)) {
                 try {
                     // Building the the index
@@ -83,7 +83,7 @@ public class TemporalAnalysisPipeline {
 //                    ex.printStackTrace();
 //                }
             } else {
-                // Advise the index already exist
+
                 System.out.println(dir.toString() + ": Index already created!");
             }
         }
@@ -96,27 +96,27 @@ public class TemporalAnalysisPipeline {
     public static void dividePoliticians(String sourcePath) {
 
             System.out.println("Dividing Politicians in Groups Yes/No Index Creation!");
-            String indexPath = AppConfigs.USER_POLITICIAN_INDEX;
+            String indexPath = AppConfigs.POLITICIAN_INDEX;
             // Initialize a new TweetsIndexBuilder
             politicianIndex indexPoliticians = new politicianIndex(sourcePath, indexPath);
-            Path dir = Paths.get(AppConfigs.USER_POLITICIAN_INDEX);
+            Path dir = Paths.get(AppConfigs.POLITICIAN_INDEX);
             // Divide politicians in YES and NO
             ArrayList<Document> yesPoliticians = indexPoliticians.search("vote", "yes", 10000);
             ArrayList<Document> noPoliticians = indexPoliticians.search("vote", "no", 10000);
 
 
-            if (yesPoliticians != null && noPoliticians != null) {
-                System.out.println("YES POLITICIANS: " + yesPoliticians.size());
-                System.out.println("NO POLITICIANS: " + noPoliticians.size());
-                System.out.println("TOT POLITICIANS: " + (yesPoliticians.size() + noPoliticians.size()));
-            }
+//            if (yesPoliticians != null && noPoliticians != null) {
+//                System.out.println("YES POLITICIANS: " + yesPoliticians.size());
+//                System.out.println("NO POLITICIANS: " + noPoliticians.size());
+//                System.out.println("TOT POLITICIANS: " + (yesPoliticians.size() + noPoliticians.size()));
+//            }
 
             // Loading all the tweets
-            String indexYes = AppConfigs.USER_YES_POLITICIAN_INDEX;
+            String indexYes = AppConfigs.POLITICIAN_YES;
             indexTweets indexAllTweets = new indexTweets(sourcePath, indexYes);
 
             // If the index of all yes tweets doesn't exist
-            dir = Paths.get(AppConfigs.USER_YES_POLITICIAN_INDEX);
+            dir = Paths.get(AppConfigs.POLITICIAN_YES);
             if (!Files.exists(dir)) {
                 // Create it collecting all the yes ploticians screen name
                 ArrayList<String> yesPoliticiansID = indexPoliticians.filter("vote", "yes", "screenName", 10000);
@@ -126,16 +126,16 @@ public class TemporalAnalysisPipeline {
                     e.printStackTrace();
                 }
             } else {
-                // Advise the index already exist
+
                 System.out.println(dir.toString() + ": Index already created!");
             }
 
-            String indexNo = AppConfigs.USER_NO_POLITICIAN_INDEX;
+            String indexNo = AppConfigs.POLITICIAN_NO;
             indexTweets indexAllTweetsNo = new indexTweets(sourcePath, indexNo);
 
 
             // If the index of all no tweets doesn't exist
-            dir = Paths.get(AppConfigs.USER_NO_POLITICIAN_INDEX);
+            dir = Paths.get(AppConfigs.POLITICIAN_NO);
             if (!Files.exists(dir)) {
                 // Create it collecting all the no ploticians screen name
                 ArrayList<String> noScreenNames = indexPoliticians.filter("vote", "no", "screenName", 10000);
@@ -145,7 +145,7 @@ public class TemporalAnalysisPipeline {
                     e.printStackTrace();
                 }
             } else {
-                // Advise the index already exist
+
                 System.out.println(dir.toString() + ": Index already created!");
             }
 
@@ -168,11 +168,39 @@ public class TemporalAnalysisPipeline {
             HashMap<Long, Integer> distribution = s.ntweets(indexLocation, date[0], date[1], step);
             TimeSeriesCollection dataset = new TimeSeriesCollection();
             dataset = s.createDataset(dataset, distribution, "tweets distribution");
-            plot p_yesno2 = new plot("Tweet Distirbution", "Tweet Distribution over time", dataset, "./src/util/Tweets-YN.png", 200);
+            plot p_yesno2 = new plot("Tweet Distirbution", "Tweet Distribution over time", dataset, AppConfigs.SAVE_IMAGE +"Tweet-Distro.png", 200);
             p_yesno2.pack();
             p_yesno2.setLocation(800, 20);
             p_yesno2.setVisible(true);
         }
+
+    /**
+     * plots the tweet distribution over time
+     * @param indexLocation1
+     * @param
+     * @throws Exception
+     * @throws IOException
+     * @throws ParseException
+     */
+    public static void plotDistributionsYesNo(String indexLocation1, String indexLocation2) throws Exception, IOException, ParseException {
+        saxAnalysis s = new saxAnalysis();
+        long step = 43200000;
+        long[] date = extractDateRange(indexLocation1);
+        System.out.println(date[0]);
+        System.out.println(date[1]);
+
+        HashMap<Long, Integer> distribution = s.ntweets(indexLocation1, date[0], date[1], step);
+        HashMap<Long, Integer> distribution2 = s.ntweets(indexLocation2, date[0], date[1], step);
+
+
+        TimeSeriesCollection dataset = new TimeSeriesCollection();
+        dataset = s.createDataset(dataset, distribution, "Yes");
+        dataset = s.createDataset(dataset, distribution2, "No");
+        plot p_yesno2 = new plot("Tweet Distirbution", "Tweet Distribution over time YES/NO", dataset, AppConfigs.SAVE_IMAGE +"Tweet-Distro-Yes-No.png", 200);
+        p_yesno2.pack();
+        p_yesno2.setLocation(800, 20);
+        p_yesno2.setVisible(true);
+    }
 
     /**
      * Performs the 2nd point related to the SAX Analysis on the indexes
@@ -181,26 +209,37 @@ public class TemporalAnalysisPipeline {
      * @param step
      * @throws Exception
      */
-        public static void performSaxAnalysis(String indexLocation, String saveClusterLocation,long step) throws Exception{
+        public static void performSaxAnalysis(String indexLocation, String saveClusterLocation,long step) throws Exception {
             System.out.println("--- SAX ANALYSIS ---");
-            saxAnalysis sax = new saxAnalysis();
-            long[] date = extractDateRange(indexLocation);
-            System.out.println("Extracting Top 1000 Terms ....");
-            ArrayList topN = sax.extractTopNTerms(1000, indexLocation);
-            ItalianAnalyzer analyzer = new ItalianAnalyzer(Version.LUCENE_41);
-            System.out.println("Creating Terms Time Series...");
-            HashMap<String, double[]> countOccurenceTs =sax.countOccurenceOverTime(topN,date[0], date[1], step, indexLocation);
+            int index = saveClusterLocation.lastIndexOf('/');
+            Path dir = Paths.get(saveClusterLocation.substring(0,index));
+            if (!Files.exists(dir)) {
+                try {
+                    saxAnalysis sax = new saxAnalysis();
+                    long[] date = extractDateRange(indexLocation);
+                    System.out.println("Extracting Top 1000 Terms ....");
+                    ArrayList topN = sax.extractTopNTerms(1000, indexLocation);
+                    ItalianAnalyzer analyzer = new ItalianAnalyzer(Version.LUCENE_41);
+                    System.out.println("Creating Terms Time Series...");
+                    HashMap<String, double[]> countOccurenceTs = sax.countOccurenceOverTime(topN, date[0], date[1], step, indexLocation);
 
-            //System.out.println(createTermsTimeSeries(indexLocation, topN,date[1], date[0], step ));
-            System.out.println("Converting Timeseries to SAX Representation...");
-            HashMap<String, String> saxRep = sax.buildSaxRepresentation(countOccurenceTs,20);
-            System.out.println("Performing k-means clustering...");
-            kmeans km = new kmeans(saxRep,20);
-            Map<String, Integer> res ;
-            res = km.fit();
-            System.out.println(res);
-            System.out.println("Saving Term clusters to Disk ....");
-            sax.saveAllClusters(20, saveClusterLocation,res,saxRep);
+                    //System.out.println(createTermsTimeSeries(indexLocation, topN,date[1], date[0], step ));
+                    System.out.println("Converting Timeseries to SAX Representation...");
+                    HashMap<String, String> saxRep = sax.buildSaxRepresentation(countOccurenceTs, 20);
+                    System.out.println("Performing k-means clustering...");
+                    kmeans km = new kmeans(saxRep, 20);
+                    Map<String, Integer> res;
+                    res = km.fit();
+                    System.out.println(res);
+                    System.out.println("Saving Term clusters to Disk ....");
+                    sax.saveAllClusters(20, saveClusterLocation, res, saxRep);
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            } else {
+                // Advise the index already exist
+                System.out.println(dir.toString() + ": SAX Analysis Already performed");
+            }
         }
 
     /**
@@ -213,35 +252,44 @@ public class TemporalAnalysisPipeline {
      */
 
         public static void performCoocurenceAnalysis(String clusterLocation, String saveLocationKcore,
-                                                     String saveLocationLCC, int k) throws IOException{
-            cooccurrence c = new cooccurrence(k, clusterLocation);
+                                                     String saveLocationLCC, int k) throws IOException {
 
-            Map<Integer, ArrayList>clusters = c.getClusterTerms(k);
-            System.out.println(clusters);
-
-            for (int i = 0; i<20; i++) {
+            Path dir = Paths.get(saveLocationLCC);
+            if (!Files.exists(dir)) {
                 try {
-                    System.out.println("Working with clusters #" + i);
-                    System.out.println("Creating graph for cluster #" + i + " ...");
+                    cooccurrence c = new cooccurrence(k, clusterLocation);
+                    Map<Integer, ArrayList> clusters = c.getClusterTerms(k);
+                    System.out.println(clusters);
 
-                    WeightedUndirectedGraph graph = c.createGraph(clusters.get(i));
-                    System.out.println("Extracting largest connected component for clusters #" + i);
-                    WeightedUndirectedGraph largestCC = c.getLargestConnectedComponent(graph, 2);
-                    // saveLCC = new PrintWriter(new FileWriter(co_lcc+i+".txt"));
-                    c.saveGraphToFile(largestCC, saveLocationLCC + i + ".txt");
-                    //saveLCC.close();
-                    System.out.println("Extracting K-cores component for clusters #" + i);
-                    WeightedUndirectedGraph kcores = c.extractKCores(graph, 2);
-                    //PrintWriter saveKcores = new PrintWriter((new FileWriter(co_kcore+i+".txt")));
-                    c.saveGraphToFile(kcores, saveLocationKcore + i + ".txt");
-                    //saveKcores.close();
-                    //c.getLargestConnectedComponent(graph,2);
-                } catch (Exception e) {
-                    continue;
+                    for (int i = 0; i < 20; i++) {
+                        try {
+                            System.out.println("Working with clusters #" + i);
+                            System.out.println("Creating graph for cluster #" + i + " ...");
+
+                            WeightedUndirectedGraph graph = c.createGraph(clusters.get(i));
+                            System.out.println("Extracting largest connected component for clusters #" + i);
+                            WeightedUndirectedGraph largestCC = c.getLargestConnectedComponent(graph, 2);
+                            // saveLCC = new PrintWriter(new FileWriter(co_lcc+i+".txt"));
+                            c.saveGraphToFile(largestCC, saveLocationLCC + i + ".txt");
+                            //saveLCC.close();
+                            System.out.println("Extracting K-cores component for clusters #" + i);
+                            WeightedUndirectedGraph kcores = c.extractKCores(graph, 2);
+                            //PrintWriter saveKcores = new PrintWriter((new FileWriter(co_kcore+i+".txt")));
+                            c.saveGraphToFile(kcores, saveLocationKcore + i + ".txt");
+                            //saveKcores.close();
+                            //c.getLargestConnectedComponent(graph,2);
+                        } catch (Exception e) {
+                            continue;
+                        }
+                    }
+                } catch (IOException ex) {
+                    ex.printStackTrace();
                 }
+            } else {
+                
+                System.out.println(dir.toString() + ": Coocurence Analysis Already performed");
             }
         }
-
     /**
      * performs the 4th point related to ploting the various timeseries and observing the various action reaction present
      * @param indexLocation
@@ -281,7 +329,7 @@ public class TemporalAnalysisPipeline {
 
                 }
                 System.out.println("Plotting :" +path.toString());
-                plot plt = new plot("Tweet Distribution", "Temporal Distribution of related tweet terms", dataset, "./pic/"+saveName+currentFile+".png", 200);
+                plot plt = new plot("Tweet Distribution", "Temporal Distribution of related tweet terms", dataset, AppConfigs.SAVE_IMAGE+saveName+currentFile+".png", 200);
 
             }
         } catch (IOException ex) {System.out.println(ex);}
@@ -313,11 +361,11 @@ public class TemporalAnalysisPipeline {
         public static void runTemporalAnalysisPipeline() throws  Exception{
             int k = 20;
 
-            String sourceTweets = "./src/util/data/stream";
-            String sourcePoliticians = AppConfigs.ALL_POLITICIANS;
-            String indexTweets = AppConfigs.USER_TWEET_INDEX;
-            String indexNoPoliticians = AppConfigs.USER_NO_POLITICIAN_INDEX;
-            String indexYesPoliticians = AppConfigs.USER_YES_POLITICIAN_INDEX;
+            String sourceTweets = AppConfigs.TWEET_STREAM;
+            String sourcePoliticians = AppConfigs.ORIGINAL_POLITICIANS;
+            String indexTweets = AppConfigs.TWEET_INDEX;
+            String indexNoPoliticians = AppConfigs.POLITICIAN_NO;
+            String indexYesPoliticians = AppConfigs.POLITICIAN_YES;
             String clusterLocationYes = AppConfigs.CLUSTER_LOCATION_YES;
             String clusterLocationNo = AppConfigs.CLUSTER_LOCATION_NO;
             String caKcoreNo = AppConfigs.CA_KCORE_NO;
@@ -329,8 +377,9 @@ public class TemporalAnalysisPipeline {
             long grain3 = 10800000;
             createTweetIndex(sourceTweets);
             createPoliticianIndex(sourcePoliticians);
-            dividePoliticians(sourcePoliticians);
-            plotDistributions(indexNoPoliticians);
+             dividePoliticians(sourcePoliticians);
+//             plotDistributions(indexTweets);
+             plotDistributionsYesNo(indexYesPoliticians, indexNoPoliticians);
             performSaxAnalysis(indexYesPoliticians,clusterLocationYes, grain12);
             performSaxAnalysis(indexYesPoliticians,clusterLocationNo, grain12);
             performCoocurenceAnalysis(clusterLocationNo, caKcoreNo,caLCCNo, k);

@@ -16,11 +16,12 @@ import org.apache.lucene.store.SimpleFSDirectory;
 import static org.apache.lucene.util.Version.LUCENE_41;
 import org.apache.lucene.util.Version;
 import twitter4j.TwitterException;
+import utils.AppConfigs;
 
 
 public abstract class buildIndex {
     // Setting up the maoin parameters
-    public static final String stopwordsLocation = "src/util/stopwords.txt";
+    public static final String stopwordsLocation = AppConfigs.STOPWORDS;
     public Directory dir;
     public Analyzer analyzer;
     public IndexWriterConfig cfg;

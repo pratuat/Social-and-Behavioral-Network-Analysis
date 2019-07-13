@@ -13,7 +13,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.zip.GZIPInputStream;
 import org.apache.lucene.analysis.Analyzer;
@@ -37,6 +36,7 @@ import org.apache.lucene.util.BytesRef;
 import twitter4j.HashtagEntity;
 import twitter4j.TwitterException;
 import twitter4j.UserMentionEntity;
+import utils.AppConfigs;
 import utils.StatusWrapper;
 
 public class indexTweets extends buildIndex {
@@ -189,7 +189,7 @@ public class indexTweets extends buildIndex {
      */
     public ArrayList<Document> search(String name, String value, int range) {
         try {
-            String indexLocation = "./src/resources/index/indexTweets";
+            String indexLocation = AppConfigs.TWEET_INDEX;
             Directory dir = new SimpleFSDirectory(new File(indexLocation));
             DirectoryReader ir = DirectoryReader.open(dir);
             IndexSearcher searcher = new IndexSearcher(ir);
@@ -212,26 +212,26 @@ public class indexTweets extends buildIndex {
         }
     }
     
-    public static void fromScreenNameToUserId(String inputFile_ScreenNames, String outputFile_UserIds) throws FileNotFoundException, IOException, org.apache.lucene.queryparser.classic.ParseException {
-        // List that will contain the twitter IDs
-        ArrayList<String> twitterIDs = new ArrayList<String>();
-
-        // Load the file containing screenNames into a list
-        List<String> usersList = txtToList(inputFile_ScreenNames);
-        int i = 0;
-        for (String screenName : usersList) {
-        	// retrieve the TwitterIDs from the tweets index
-            ArrayList<Document> docs = search("screenName", screenName, 1);
-            if (docs.isEmpty() != true) {
-            	// Get the userId from the first resulting doc
-                String userId = docs.get(0).get("userId");
-                // Add it to the output list
-                twitterIDs.add(userId);
-            }
-            i++;
-        }
-        TxtUtils.iterableToTxt(outputFile_UserIds, twitterIDs);
-    }
+//    public static void fromScreenNameToUserId(String inputFile_ScreenNames, String outputFile_UserIds) throws FileNotFoundException, IOException, org.apache.lucene.queryparser.classic.ParseException {
+//        // List that will contain the twitter IDs
+//        ArrayList<String> twitterIDs = new ArrayList<String>();
+//
+//        // Load the file containing screenNames into a list
+//        List<String> usersList = txtToList(inputFile_ScreenNames);
+//        int i = 0;
+//        for (String screenName : usersList) {
+//        	// retrieve the TwitterIDs from the tweets index
+//            ArrayList<Document> docs = search("screenName", screenName, 1);
+//            if (docs.isEmpty() != true) {
+//            	// Get the userId from the first resulting doc
+//                String userId = docs.get(0).get("userId");
+//                // Add it to the output list
+//                twitterIDs.add(userId);
+//            }
+//            i++;
+//        }
+//        TxtUtils.iterableToTxt(outputFile_UserIds, twitterIDs);
+//    }
 
     /**
      * A method that search the occurence of two terms in the same tweet
@@ -246,7 +246,7 @@ public class indexTweets extends buildIndex {
     public int search(String term1, String term2, String field) throws IOException, org.apache.lucene.queryparser.classic.ParseException {
         params(index);
         writer.close();
-        String indexLocation = "./index/indexTweets";
+        String indexLocation = AppConfigs.TWEET_INDEX;
         Directory dir = new SimpleFSDirectory(new File(indexLocation));
         DirectoryReader ir = DirectoryReader.open(dir);
         IndexSearcher searcher = new IndexSearcher(ir);
@@ -285,7 +285,7 @@ public class indexTweets extends buildIndex {
     public int termFrequency(String term, String field) throws IOException, org.apache.lucene.queryparser.classic.ParseException {
         params(index);
         writer.close();
-        String indexLocation = "./index/indexTweets";
+        String indexLocation = AppConfigs.TWEET_INDEX;
         Directory dir = new SimpleFSDirectory(new File(indexLocation));
         DirectoryReader ir = DirectoryReader.open(dir);
         IndexSearcher searcher = new IndexSearcher(ir);

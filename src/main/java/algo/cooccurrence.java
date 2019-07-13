@@ -80,7 +80,7 @@ public class cooccurrence {
      * @throws ParseException
      */
     public WeightedUndirectedGraph createGraph(ArrayList<String> clusterTerms) throws IOException, ParseException {
-        String indexLocation = AppConfigs.USER_TWEET_INDEX;
+        String indexLocation = AppConfigs.TWEET_INDEX;
         String sourceTweets = "./src/util/data/stream";
         WeightedUndirectedGraph graph = new WeightedUndirectedGraph(clusterTerms.size());
         indexTweets index = new indexTweets(sourceTweets, indexLocation);

@@ -54,13 +54,13 @@ public class plot extends JFrame {
         setContentPane(chartPanel);
 
         //save our chart
-        ChartUtilities.saveChartAsPNG(new File(fileName), chart, 800, 600);
+        ChartUtilities.saveChartAsPNG(new File(fileName), chart, 1200, 900);
     }
 
     private DateAxis setAxis(DateAxis axis, XYPlot plot){
         axis = (DateAxis) plot.getDomainAxis();
-        axis.setLabelFont(new Font("Verdana", Font.BOLD, 14));
-        axis.setTickLabelFont(new Font("Verdana", Font.PLAIN, 10));
+        axis.setLabelFont(new Font("Helvetica", Font.BOLD, 12));
+        axis.setTickLabelFont(new Font("Helvetica", Font.PLAIN, 10));
         axis.setTickLabelsVisible(true);
         axis.setTickMarksVisible(true);
         axis.setLabelAngle(0);
