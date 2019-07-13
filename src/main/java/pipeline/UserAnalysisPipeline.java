@@ -41,16 +41,16 @@ public class UserAnalysisPipeline {
     }
 
     /**
-     * Generates Largest Connected Component of user sub-graphs, compute HITS score and KPP-NEG score on user sub-graphs
-     * and save them to file
-     * @param topUsers List of user sets to perform graph analysis.
+     * Generates Largest Connected Component of user sub-graphs, compute HITS score and KPP-NEG score on all users,
+     * yes users and no users groups (saves results to files).
      * @throws IOException
      * @throws InterruptedException
      */
     @SuppressWarnings({ "rawtypes", "unchecked" })
 	public static void generateUserInducedSubGraphs() throws IOException, InterruptedException {
+
         System.out.println("=====================================");
-        System.out.println("Generating user induced subgraph ...");
+        System.out.println("Generating user induced sub-graph ...");
 
         List[] topUsers = shortListUsers();
         List<String> topUsersByTweetCount = topUsers[0];
@@ -58,9 +58,8 @@ public class UserAnalysisPipeline {
         List<String> topNoUsersByTweetCount = topUsers[2];
 
         // ... LOAD USER_ID-SCREEN_NAME HASH-MAP ... //
-        /**
-         * load user_id - user_screen_name hash-map
-         */
+
+        // load user_id - user_screen_name hash-map
         String[] screenNames = FileUtility.loadColumnsFromCSV(AppConfigs.USER_TWEET_COUNT, 1);
         String[] longIds = FileUtility.loadColumnsFromCSV(AppConfigs.USER_TWEET_COUNT, 0);
 
@@ -68,9 +67,7 @@ public class UserAnalysisPipeline {
             userIntIdScreenNameHashMap.put(Long.parseLong(longIds[i]), screenNames[i]);
         }
 
-        /**
-         * load original user graph
-         */
+        // load original user graph
         System.out.println("Loading graph ...");
 
         int graphSize = 16815933;
@@ -86,14 +83,10 @@ public class UserAnalysisPipeline {
         // load users M, M_Y, M_N
         int[] topUsersIds = UserAnalysisUtility.getIntMappedUserIds(topUsersByTweetCount.stream().toArray(String[]::new), mapLong2Int);
 
-        /**
-         * Retrieve largest connected component S(M) of sub-graph induced by user M
-         */
+        // Retrieve largest connected component S(M) of sub-graph induced by user M
         MappedWeightedGraph lccGraph = GraphAnalysis.extractLargestCC(graph, topUsersIds, mapLong2Int, true);
 
-        /**
-         * Compute top 2000 hub and authority users from S(M) sub-graph
-         */
+        // Compute top 2000 hub and authority users from S(M) sub-graph
         GraphAnalysis.saveTopKAuthorities(lccGraph, mapLong2Int, 2000, AppConfigs.ALL_USERS_TOP_AUTHORITIES, userIntIdScreenNameHashMap);
 
         System.out.println("Computing all user authorities completed ...");
@@ -104,14 +97,11 @@ public class UserAnalysisPipeline {
         System.out.println("Computing yes user authorities ...");
 
         int[] topYesUsersIds = UserAnalysisUtility.getIntMappedUserIds(topYesUsersByTweetCount.stream().toArray(String[]::new), mapLong2Int);
-        /**
-         * Retrieve largest connected component of sub-graph induced by YES user
-         */
+
+        // Retrieve largest connected component of sub-graph induced by YES user
         MappedWeightedGraph yesLccGraph = GraphAnalysis.extractLargestCC(graph, topYesUsersIds, mapLong2Int, false);
 
-        /**
-         * Compute top 1000 hub and authority users from YES sub-graph
-         */
+        // Compute top 1000 hub and authority users from YES sub-graph
         GraphAnalysis.saveTopKAuthorities(yesLccGraph, mapLong2Int, 1000, AppConfigs.YES_USERS_TOP_AUTHORITIES, userIntIdScreenNameHashMap);
 
         System.out.println("Computing yes user authorities completed ...");
@@ -122,14 +112,12 @@ public class UserAnalysisPipeline {
         System.out.println("Computing no user authorities ...");
 
         int[] topNoUsersIds = UserAnalysisUtility.getIntMappedUserIds(topNoUsersByTweetCount.stream().toArray(String[]::new), mapLong2Int);
-        /**
-         * Retrieve largest connected component of sub-graph induced by NO user
-         */
+
+        // Retrieve largest connected component of sub-graph induced by NO user
         MappedWeightedGraph noLccGraph = GraphAnalysis.extractLargestCC(graph, topNoUsersIds, mapLong2Int, false);
 
-        /**
-         * Compute top 1000 hub and authority users from NO sub-graph
-         */
+
+        // Compute top 1000 hub and authority users from NO sub-graph
         GraphAnalysis.saveTopKAuthorities(noLccGraph, mapLong2Int, 1000, AppConfigs.NO_USERS_TOP_AUTHORITIES, userIntIdScreenNameHashMap);
 
         System.out.println("Computing no user authorities completed ...");
@@ -143,8 +131,6 @@ public class UserAnalysisPipeline {
 
         System.out.println("Computing KPP-NEG completed ...");
     }
-
-    // ... CREATE USER TWEET COUNT (ALL , YES/NO POLITICIANS) LIST ... //
 
     /**
      * Counts number of mentions for yes/no politicians and classify users to yes/no group
@@ -213,8 +199,6 @@ public class UserAnalysisPipeline {
         System.out.println("----------------------------------");
     }
 
-    // ... CREATE USER-YES_POLITICIAN MAP INDEX ... //
-    // ... CREATE USER-NO_POLITICIAN MAP INDEX ... //
 
     /**
      * Creates separate user_politician map indexes for yes and no politicians
@@ -265,7 +249,7 @@ public class UserAnalysisPipeline {
 
     }
 
-    // ... CREATE USER-POLITICIAN INDEX ... //
+
     /**
      * Creates user_politician map indexes all politicians
      * @throws Exception
@@ -309,9 +293,6 @@ public class UserAnalysisPipeline {
 
         System.out.println("--------------------------------");
     }
-
-    // ... WRITE USER TWEETS TO INDEX ... //
-    // ... WRITE UNIQUE USER IDENTIFIERS TO FILE ... //
 
     /**
      * Build tweet indexes for tweets which mention all politicians, also short-list those users and saves to csv file
@@ -364,6 +345,10 @@ public class UserAnalysisPipeline {
         System.out.println("-----------------------------");
     }
 
+    /**
+     * Load user lists, all_users, yes_users and no_users from csv files.
+     * @throws Exception
+     */
     @SuppressWarnings("rawtypes")
 	public static List[] shortListUsers() {
 
@@ -390,6 +375,12 @@ public class UserAnalysisPipeline {
 
 class UserAnalysisUtility {
 
+    /**
+     * Build Lucene query to extract tweets with politicians mentioned
+     * @param keyword field name in the lucene index
+     * @param politicians list of politician screen names
+     * @return
+     */
     public static Query getPoliticiansQuery(String keyword, String[] politicians) {
 
         Query query = null;
@@ -415,6 +406,12 @@ class UserAnalysisUtility {
         return query;
     }
 
+    /**
+     * Convert long user ids into int ids
+     * @param userIds
+     * @param longIntDict
+     * @return int ids of input long ids
+     */
     public static int[] getIntMappedUserIds(String[] userIds, LongIntDict longIntDict) {
 
         long id;

@@ -1,7 +1,6 @@
 package pipeline;
 
 import java.io.BufferedReader;
-import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 import java.nio.file.DirectoryStream;
@@ -38,10 +37,10 @@ public class TemporalAnalysisPipeline {
     public static void createTweetIndex(String sourcePath) {
 
             System.out.println("Tweets Index Creation!");
-            String indexPath = AppConfigs.TWEET_INDEX;
+            String indexPath = AppConfigs.ALL_TWEET_INDEX;
             // Initialize a new TweetsIndexBuilder
             indexTweets indexAllTweets = new indexTweets(sourcePath, indexPath);
-            Path dir = Paths.get(AppConfigs.TWEET_INDEX);
+            Path dir = Paths.get(AppConfigs.ALL_TWEET_INDEX);
             if (!Files.exists(dir)) {
                 try {
                     // Build the index
@@ -371,7 +370,7 @@ public class TemporalAnalysisPipeline {
 
             String sourceTweets = AppConfigs.TWEET_STREAM;
             String sourcePoliticians = AppConfigs.ORIGINAL_POLITICIANS;
-            String indexTweets = AppConfigs.TWEET_INDEX;
+            String indexTweets = AppConfigs.ALL_TWEET_INDEX;
             String indexNoPoliticians = AppConfigs.POLITICIAN_NO;
             String indexYesPoliticians = AppConfigs.POLITICIAN_YES;
             String clusterLocationYes = AppConfigs.CLUSTER_LOCATION_YES;

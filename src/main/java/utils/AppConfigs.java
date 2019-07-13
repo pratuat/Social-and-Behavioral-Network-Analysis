@@ -104,9 +104,7 @@ public class AppConfigs {
     public static final String USER_NO_POLITICIAN_INDEX = DATA_DIR + "indexes/user_no_politician/";
 
     public static final String TWEET_STREAM = DATA_DIR +"stream";
-
-    public static final String TWEET_INDEX = DATA_DIR + "indexes/indexTweets";
-
+    
     public static final String POLITICIAN_INDEX = DATA_DIR + "indexes/indexPoliticians";
 
     public static final String POLITICIAN_YES = DATA_DIR + "indexes/indexYes";

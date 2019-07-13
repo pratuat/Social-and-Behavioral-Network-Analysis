@@ -4,7 +4,6 @@ import org.apache.lucene.document.TextField;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.file.DirectoryStream;
@@ -28,11 +27,9 @@ import org.apache.lucene.search.*;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.SimpleFSDirectory;
 
-import io.TxtUtils;
-
 import static io.TxtUtils.txtToList;
 import static org.apache.lucene.util.Version.LUCENE_41;
-import org.apache.lucene.util.BytesRef;
+
 import twitter4j.HashtagEntity;
 import twitter4j.TwitterException;
 import twitter4j.UserMentionEntity;
@@ -191,7 +188,7 @@ public class indexTweets extends buildIndex {
      */
     public static ArrayList<Document> search(String name, String value, int range) {
         try {
-            String indexLocation = AppConfigs.TWEET_INDEX;
+            String indexLocation = AppConfigs.ALL_TWEET_INDEX;
             Directory dir = new SimpleFSDirectory(new File(indexLocation));
             DirectoryReader ir = DirectoryReader.open(dir);
             IndexSearcher searcher = new IndexSearcher(ir);
@@ -250,7 +247,7 @@ public class indexTweets extends buildIndex {
     public int search(String term1, String term2, String field) throws IOException, org.apache.lucene.queryparser.classic.ParseException {
         params(index);
         writer.close();
-        String indexLocation = AppConfigs.TWEET_INDEX;
+        String indexLocation = AppConfigs.ALL_TWEET_INDEX;
         Directory dir = new SimpleFSDirectory(new File(indexLocation));
         DirectoryReader ir = DirectoryReader.open(dir);
         IndexSearcher searcher = new IndexSearcher(ir);
@@ -289,7 +286,7 @@ public class indexTweets extends buildIndex {
     public int termFrequency(String term, String field) throws IOException, org.apache.lucene.queryparser.classic.ParseException {
         params(index);
         writer.close();
-        String indexLocation = AppConfigs.TWEET_INDEX;
+        String indexLocation = AppConfigs.ALL_TWEET_INDEX;
         Directory dir = new SimpleFSDirectory(new File(indexLocation));
         DirectoryReader ir = DirectoryReader.open(dir);
         IndexSearcher searcher = new IndexSearcher(ir);

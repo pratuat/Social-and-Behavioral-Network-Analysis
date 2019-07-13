@@ -5,7 +5,6 @@ import it.stilo.g.algo.*;
 import it.stilo.g.structures.Core;
 import it.stilo.g.structures.WeightedUndirectedGraph;
 import it.stilo.g.util.GraphWriter;
-import it.stilo.g.util.NodesMapper;
 
 import java.io.*;
 import java.util.*;
@@ -85,7 +84,7 @@ public class cooccurrence {
      * @throws ParseException
      */
     public WeightedUndirectedGraph createGraph(ArrayList<String> clusterTerms) throws IOException, ParseException {
-        String indexLocation = AppConfigs.TWEET_INDEX;
+        String indexLocation = AppConfigs.ALL_TWEET_INDEX;
         String sourceTweets = "./src/util/data/stream";
         WeightedUndirectedGraph graph = new WeightedUndirectedGraph(clusterTerms.size());
         indexTweets index = new indexTweets(sourceTweets, indexLocation);

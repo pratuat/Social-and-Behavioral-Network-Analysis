@@ -6,12 +6,9 @@ import java.io.File;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.StringField;
-import org.apache.lucene.document.Document;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.search.BooleanClause;
-import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
@@ -19,10 +16,6 @@ import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.SimpleFSDirectory;
-import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.NumericUtils;
-import twitter4j.TwitterException;
-import java.util.HashMap;
 
 import utils.AppConfigs;
 import utils.csv;
@@ -37,7 +30,7 @@ public class politicianIndex extends buildIndex {
     private StringField vote;
     private StringField party;
     private StringField screenName;
-    private static String indexLocation = AppConfigs.TWEET_INDEX;
+    private static String indexLocation = AppConfigs.ALL_TWEET_INDEX;
     private static IndexReader ir;
 
     public politicianIndex(String stream, String index) {
