@@ -138,8 +138,10 @@ public class GraphKMeans {
 		int nNodes = g.size;
 		ArrayList<Integer> list = new ArrayList<Integer>();
         
-		for (int i=1; i<nNodes+1; i++) {
-            list.add(new Integer(i));
+		for (int i=0; i<nNodes; i++) {
+			if(this.g.V[i] != -1){
+				list.add(new Integer(this.g.V[i]));
+			}
         }
         
 		Collections.shuffle(list);
@@ -275,15 +277,15 @@ public class GraphKMeans {
 	private double distance(int c, int n) {
 		
 		// Computing distance(c, n)
-		int[] neighbors_c = ArraysUtil.concat(this.g.in[c], this.g.out[c]);
+		int[] neighbors_c = ArraysUtil.intersection(ArraysUtil.concat(this.g.in[c], this.g.out[c]), this.g.V);
 		int[] neighbors_c_No_Dup = ArraysUtil.uniq(neighbors_c);
-		int[] neighbors_n = ArraysUtil.concat(this.g.in[n], this.g.out[n]);
+		int[] neighbors_n = ArraysUtil.intersection(ArraysUtil.concat(this.g.in[n], this.g.out[n]), this.g.V);
 		int[] neighbors_n_No_Dup = ArraysUtil.uniq(neighbors_n);
 		double distance = (1/ArraysUtil.cosineSimilarity(neighbors_c_No_Dup, neighbors_n_No_Dup));
 	    
 		// Computing Label_Similarity
 		int[] cArr = {c};
-		int[] nNeighbors = ArraysUtil.concat(this.g.in[n], this.g.out[n]);
+		int[] nNeighbors = ArraysUtil.intersection(ArraysUtil.concat(this.g.in[n], this.g.out[n]), this.g.V);
 		int[] nArr = {n};
 		int[] nIncludedNeighbors = ArraysUtil.concat(nNeighbors, nArr);
 		int[] cExcludedNIncludedNeighbors = ArraysUtil.remove(cArr, nIncludedNeighbors);
@@ -293,7 +295,7 @@ public class GraphKMeans {
 				nbrSameLabel++;
 			}
 		}
-		double Label_Similarity = nbrSameLabel/ArraysUtil.uniq(cExcludedNIncludedNeighbors).length;
+		double Label_Similarity = Double.valueOf(nbrSameLabel)/Double.valueOf(ArraysUtil.uniq(cExcludedNIncludedNeighbors).length);
 		
 		//distance(c, n) + (1-Label_Similarity)
 		return (distance + (1 - Label_Similarity));
@@ -360,7 +362,17 @@ public class GraphKMeans {
 		boolean converged = false;
 		
 		// Initialize/compute the cluster centers
+		boolean empty = false;
 		if(this.clusters.isEmpty()) {
+			empty = true;
+		}
+		for (ArrayList<Integer> cluster: this.clusters) {
+			if(cluster.isEmpty()) {
+				empty = true;
+			}
+		}
+		
+		if(empty) {
 			this.setRandomCentroids();
 		}
 		else {

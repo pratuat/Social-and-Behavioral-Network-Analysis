@@ -19,13 +19,20 @@ import java.util.Hashtable;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+
+import org.apache.commons.lang3.ArrayUtils;
 import org.apache.lucene.queryparser.classic.ParseException;
+
+import com.google.common.primitives.Ints;
+
 import it.stilo.g.structures.LongIntDict;
 import it.stilo.g.structures.WeightedDirectedGraph;
 import it.stilo.g.util.ArraysUtil;
 import it.stilo.g.util.GraphReader;
 import it.stilo.g.util.ZacharyNetwork;
 import it.stilo.g.algo.ComunityLPA;
+import it.stilo.g.algo.ConnectedComponents;
+import it.stilo.g.algo.SubGraph;
 import gnu.trove.map.TIntLongMap;
 import index.indexTweets;
 import spread_of_influence.GraphKMeans;
@@ -34,6 +41,8 @@ import utils.AppConfigs;
 
 @SuppressWarnings("unused")
 public class SpreadOfInfluencePipeline {
+	
+	public static int runner = (int) (Runtime.getRuntime().availableProcessors());
 	
 	private static int getGraphSize(String fileName) {
 		String line;
@@ -50,17 +59,71 @@ public class SpreadOfInfluencePipeline {
         return noDupSet.size();
 	}
 	
+	private static WeightedDirectedGraph reduceGraphSize(WeightedDirectedGraph g, ArrayList<Integer> seedsYes,  ArrayList<Integer> seedsNo) {
+		
+		for(int node: g.V) {
+			if (node != -1) {
+				if((g.in[node] == null || g.out[node] == null)) {
+					if(!seedsYes.contains(node) && !seedsNo.contains(node)) {
+						g.remove(node);
+					}
+				}
+				else if(g.in[node].length < 100 && g.out[node].length < 100 && !seedsYes.contains(node) && !seedsNo.contains(node)) {
+					g.remove(node);
+				}
+			}
+		}
+		
+		return g;
+	}
+	
+	private static int[] convertIntegerToInt(ArrayList<Integer> list) {
+		int[] result = new int[list.size()];
+		int i = 0;
+		for(Integer e: list) {
+			result[i] = e;
+			i++;
+		}
+		return result;
+	}
+	
+	private static ArrayList<Integer> convertIntToInteger(int[] array) {
+		ArrayList<Integer> result = new ArrayList<Integer>();
+		int i = 0;
+		for(Integer e: array) {
+			result.add(e);
+			i++;
+		}
+		return result;
+	}
+	
 	private static void runKMeansWithSeed(WeightedDirectedGraph g, LongIntDict mapLong2Int, String seedsYesFile, String seedsNoFile, String outputFile, String seeds) throws IOException {
 		SimpleDateFormat formatter= new SimpleDateFormat("dd-MM-yyyy 'at' HH:mm:ss");
 		Date date = new Date(System.currentTimeMillis());
 		System.out.println(formatter.format(date)+" INFO: Running the GraphKMeans algorithm using "+seeds+" as seeds...");
 		
-		// Instantiate a GraphKMeans object with k = 2 and maxIter = 1000
-		GraphKMeans kMeans = new GraphKMeans(2, g, 50);
-		
 		// Load the seeds nodes from file mapping them from Long to int
 		ArrayList<Integer> seedsYes = GraphKMeans.loadSeed(mapLong2Int, seedsYesFile);
+		seedsYes = convertIntToInteger(ArraysUtil.intersection(convertIntegerToInt(seedsYes), g.V));
+		
 		ArrayList<Integer> seedsNo = GraphKMeans.loadSeed(mapLong2Int, seedsNoFile);
+		seedsNo = convertIntToInteger(ArraysUtil.intersection(convertIntegerToInt(seedsNo), g.V));
+		
+		//reducing the graph size
+		g = reduceGraphSize(g, seedsYes, seedsNo);
+		int n = 0;
+		for(int node: g.V) {
+			if (node != -1) {
+				n++;
+			}
+		}
+		
+		seedsYes = convertIntToInteger(ArraysUtil.intersection(convertIntegerToInt(seedsYes), g.V));
+		seedsNo = convertIntToInteger(ArraysUtil.intersection(convertIntegerToInt(seedsNo), g.V));
+		
+		// Instantiate a GraphKMeans object with k = 2 and maxIter = 1000
+		GraphKMeans kMeans = new GraphKMeans(2, g, 5);
+		
 		
 		// Set the Yes seeds and No seeds as initial clusters of the GraphKMeans object
 		ArrayList<ArrayList<Integer>> initialClusters = new ArrayList<ArrayList<Integer>>();
@@ -106,7 +169,7 @@ public class SpreadOfInfluencePipeline {
 		
 	}
 	
-	public static void runGraphKMeans() throws FileNotFoundException, IOException, ParseException {
+	public static void runGraphKMeans() throws FileNotFoundException, IOException, ParseException, InterruptedException {
 		/*
 			// Create a fake graph for testing
 			// the real network is going to be S(M)
@@ -131,23 +194,40 @@ public class SpreadOfInfluencePipeline {
 		date = new Date(System.currentTimeMillis());
 		System.out.println(formatter.format(date)+" INFO: Loading the S(M) network...");
 	
-		int graphSize = 10997;
+		int graphSize = 34879;
+		//int graphSize = 6217;
 		WeightedDirectedGraph g = new WeightedDirectedGraph(graphSize + 1);
 		String graphFilename = AppConfigs.SUB_GRAPH_S_OF_M;
 		LongIntDict mapLong2Int = new LongIntDict();
 		GraphReader.readGraphLong2IntRemap(g, graphFilename, mapLong2Int, false);
+		
+		// extracting the largest connected component of g
+		//Set<Integer> setMaxCC = utils.GraphAnalysis.getMaxSet(ConnectedComponents.rootedConnectedComponents(g, ArrayUtils.removeElement(g.V, -1), runner));
+        //g = SubGraph.extract(g, Ints.toArray(setMaxCC), runner);
 		
 		
 		/**
 		 * run the GraphKMeans for the top k players
 		 */
 		
-		runKMeansWithSeed(g, mapLong2Int, AppConfigs.K_YES, AppConfigs.K_NO, AppConfigs.GRAPH_K_MEANS_OUTPUT_KPLAYES, "the K-Playes");
+		//runKMeansWithSeed(g, mapLong2Int, AppConfigs.K_YES, AppConfigs.K_NO, AppConfigs.GRAPH_K_MEANS_OUTPUT_KPLAYES, "the K-Playes");
 		
 		
 		/**
 		 * run for M
 		 */
+		
+		// load the S(M) graph mapping Long to Integer
+		date = new Date(System.currentTimeMillis());
+		System.out.println(formatter.format(date)+" INFO: reloading the S(M) network...");
+	
+		graphSize = 34879;
+		//int graphSize = 6217;
+		g = new WeightedDirectedGraph(graphSize + 1);
+		graphFilename = AppConfigs.SUB_GRAPH_S_OF_M;
+		mapLong2Int = new LongIntDict();
+		GraphReader.readGraphLong2IntRemap(g, graphFilename, mapLong2Int, false);
+		
 		
 		runKMeansWithSeed(g, mapLong2Int, AppConfigs.M_YES, AppConfigs.M_NO, AppConfigs.GRAPH_K_MEANS_OUTPUT_M, "M");
 		
@@ -155,6 +235,17 @@ public class SpreadOfInfluencePipeline {
 		/**
 		 * run for M prime
 		 */
+		
+		// load the S(M) graph mapping Long to Integer
+		date = new Date(System.currentTimeMillis());
+		System.out.println(formatter.format(date)+" INFO: reloading the S(M) network...");
+	
+		graphSize = 34879;
+		//int graphSize = 6217;
+		g = new WeightedDirectedGraph(graphSize + 1);
+		graphFilename = AppConfigs.SUB_GRAPH_S_OF_M;
+		mapLong2Int = new LongIntDict();
+		GraphReader.readGraphLong2IntRemap(g, graphFilename, mapLong2Int, false);
 		
 		runKMeansWithSeed(g, mapLong2Int, AppConfigs.MP_YES,AppConfigs.MP_NO, AppConfigs.GRAPH_K_MEANS_OUTPUT_MPRIME, "M_prime");
 		
@@ -244,7 +335,7 @@ public class SpreadOfInfluencePipeline {
 		// load graph and mapper
     	date = new Date(System.currentTimeMillis());
     	System.out.println(formatter.format(date)+" INFO: Loading the S(M) network...");
-    	int graphSize = 10997;
+    	int graphSize = 34879;
         WeightedDirectedGraph g = new WeightedDirectedGraph(graphSize + 1);
         String graphFilename = AppConfigs.SUB_GRAPH_S_OF_M;
         LongIntDict mapLong2Int = new LongIntDict();
@@ -257,7 +348,7 @@ public class SpreadOfInfluencePipeline {
         	System.out.println(formatter.format(date)+" INFO: Run N°"+i+".");
         	
         	// Run the label propagation algorithm on the S(M) graph
-        	int[] labels = ComunityLPA.compute(g, 1.0, 1);
+        	int[] labels = ComunityLPA.compute(g, 0.99, runner);
         	Integer[] labels_Integer =Arrays.stream(labels).boxed().toArray(Integer[]::new);
         	
         	// Create community Ids
@@ -559,13 +650,13 @@ public class SpreadOfInfluencePipeline {
     }
     
 	public static void run() throws FileNotFoundException, IOException, ParseException, InterruptedException {
-		int graphSize = getGraphSize(AppConfigs.SUB_GRAPH_S_OF_M);
-		System.out.println(graphSize);
-		//runGraphKMeans();
-		//runLPA();
-		//runLPAX10();
-		//chooseCommunityXUser();
-		//generateNMI_Matrix();
+		//int graphSize = getGraphSize(AppConfigs.RESOURCES_DIR + "Sub_graph_S_of_M"); 
+		//System.out.println(graphSize);
+		runGraphKMeans();
+		runLPA();
+		runLPAX10();
+		chooseCommunityXUser();
+		generateNMI_Matrix();
 		
 	}
 

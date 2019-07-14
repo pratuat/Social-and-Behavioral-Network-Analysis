@@ -17,7 +17,7 @@ public abstract class GraphAnalysis {
 
     public static int runner = (int) (Runtime.getRuntime().availableProcessors());
 
-    private static Set<Integer> getMaxSet(Set<Set<Integer>> comps) {
+    public static Set<Integer> getMaxSet(Set<Set<Integer>> comps) {
         int m = 0;
         Set<Integer> max_set = null;
         // get largest component
